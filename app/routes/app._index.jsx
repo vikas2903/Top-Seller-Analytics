@@ -3,11 +3,46 @@ import { useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
+import connectDataBase from "../lib/db.js";
+import InstalledShop from "../lib/store.js";
+import { json } from "@remix-run/node";
+import { useLoaderData } from "react-router";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
+  // await authenticate.admin(request);
 
-  return null;
+  const { session } = await authenticate.admin(request);
+  const shopName = session.shop;
+  const accessToken = session.accessToken;
+
+  try {
+    await connectDataBase();
+
+    const getinstlledshopdata = await InstalledShop.findOne({ shopId: shopName, active: true });
+    console.log("getinstlledshopdata", getinstlledshopdata);
+
+    const installedShop = await InstalledShop.findOneAndUpdate(
+      { shopId: shopName },
+      {
+        shopId: shopName,
+        accessToken,
+        active: true,
+        installedAt: new Date(),
+      },
+      { upsert: true, new: true }
+
+    );
+
+    if (installedShop) {
+      console.log(`✅ Store Data Saved into Database for ${shopName}`);
+    }
+
+  } catch (error) {
+    console.error('Error in loader:', error);
+    throw error;
+  }
+
+  return json({ shopName, accessToken });
 };
 
 export const action = async ({ request }) => {
@@ -127,6 +162,9 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
+
+  const data = useLoaderData();
+  console.log(data);
   const fetcher = useFetcher();
   const shopify = useAppBridge();
   const isLoading =

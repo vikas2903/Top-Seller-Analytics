@@ -6,8 +6,10 @@ import { loginErrorMessage } from "./error.server";
 
 export const loader = async ({ request }) => {
   const errors = loginErrorMessage(await login(request));
+  const adminData = await login(request);
+  const shops = adminData?.shop || null;
 
-  return { errors };
+  return { errors, shops };
 };
 
 export const action = async ({ request }) => {
@@ -21,8 +23,11 @@ export const action = async ({ request }) => {
 export default function Auth() {
   const loaderData = useLoaderData();
   const actionData = useActionData();
-  const [shop, setShop] = useState("");
+
+  const { shops } = loaderData || {};
+    const [shop, setShop] = useState(shops ? shops.myshopifyDomain : '');
   const { errors } = actionData || loaderData;
+
 
   return (
     <AppProvider embedded={false}>
