@@ -21,6 +21,13 @@ function formatSyncDateLabel(date) {
   });
 }
 
+function getRecentDateStrings(days = 7) {
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(Date.now() - index * 86400000);
+    return date.toISOString().split("T")[0];
+  });
+}
+
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const shopName = session.shop;
@@ -43,6 +50,14 @@ export const loader = async ({ request }) => {
     .sort({ processedAt: -1 })
     .lean();
 
+  const recentDates = getRecentDateStrings();
+  const recentProducts = await DailyProductSale.find({
+    shop: shopName,
+    date: { $in: recentDates },
+  })
+    .sort({ date: -1, soldQty: -1, lastUpdatedAt: -1 })
+    .lean();
+
   const topProduct = latestProcessedDay
     ? await DailyProductSale.findOne({
         shop: shopName,
@@ -51,6 +66,19 @@ export const loader = async ({ request }) => {
         .sort({ soldQty: -1, lastUpdatedAt: -1 })
         .lean()
     : null;
+
+  const normalizedShop = shopName.replace(".myshopify.com", "");
+  const availableDates = recentDates;
+  const tableProducts = recentProducts.map((product) => ({
+    id: product._id?.toString?.() ?? product.productId,
+    imageUrl: product.imageUrl || null,
+    title: product.title || "Unknown Product",
+    soldQty: product.soldQty || 0,
+    date: product.date,
+    productId: product.productId,
+    handle: product.handle || null,
+    productAdminUrl: `https://admin.shopify.com/store/${normalizedShop}/products/${product.productId}`,
+  }));
 
   const kpis = {
     topProductName: topProduct?.title || "No synced products",
@@ -70,17 +98,25 @@ export const loader = async ({ request }) => {
   return json({
     shopName,
     kpis,
+    availableDates,
+    tableProducts,
+    defaultFilterDate: latestProcessedDay?.date || availableDates[0] || "",
   });
 };
 
 export default function Index() {
-  const { kpis } = useLoaderData();
+  const { kpis, availableDates, tableProducts, defaultFilterDate } = useLoaderData();
 
   return (
     <Page>
       <Layout>
         <Layout.Section>
-          <Dashboard kpis={kpis} />
+          <Dashboard
+            kpis={kpis}
+            availableDates={availableDates}
+            tableProducts={tableProducts}
+            defaultFilterDate={defaultFilterDate}
+          />
         </Layout.Section>
       </Layout>
     </Page>
