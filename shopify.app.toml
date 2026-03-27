@@ -2,12 +2,11 @@
 
 client_id = "57cba50f7828bfbeb1800e8062e1b437"
 name = "TopSeller Analytics"
-application_url = "https://example.com"
+application_url = "https://top-seller-analytics.onrender.com"
 embedded = true
 
-[build]
+[build] 
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
 
 [webhooks]
 api_version = "2026-04"
@@ -26,7 +25,7 @@ scopes = "read_discounts,read_orders,read_themes,write_metaobject_definitions,wr
 
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://top-seller-analytics.onrender.com/api/auth" ]
 
 [product.metafields.app.demo_info]
 type = "single_line_text_field"

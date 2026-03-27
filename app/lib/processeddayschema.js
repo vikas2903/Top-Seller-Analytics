@@ -8,7 +8,8 @@ const ProcessedDaySchema = new mongoose.Schema({
     date: { type: String, required: true, index: true },   // "2025-03-18"
     processedAt: { type: Date, required: true },
     orderCount: { type: Number, default: 0 },
-    recordsUpdated: { type: Number, default: 0 }
+    recordsUpdated: { type: Number, default: 0 },
+    skippedLineItems: { type: Number, default: 0 }
 });
 
 // Unique index → same day can be processed only once

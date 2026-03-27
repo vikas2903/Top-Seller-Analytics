@@ -8,12 +8,11 @@ export async function runTopSellerSync({ admin, shop }) {
 
   const now = new Date();
   const yesterday = new Date(now.getTime() - 86400000);
-
-  const start = yesterday.toISOString();
-  const end = now.toISOString();
   const yesterdayDateStr = yesterday.toISOString().split("T")[0];
+  const start = new Date(`${yesterdayDateStr}T00:00:00.000Z`);
+  const end = new Date(`${yesterdayDateStr}T23:59:59.999Z`);
 
-  const QUERY_STR = `created_at:>=${start} AND created_at:<=${end}`;
+  const QUERY_STR = `created_at:>=${start.toISOString()} AND created_at:<=${end.toISOString()}`;
 
   let allOrders = [];
   let hasNextPage = true;
@@ -65,6 +64,14 @@ export async function runTopSellerSync({ admin, shop }) {
     });
 
     const result = await response.json();
+    if (result.errors?.length) {
+      throw new Error(result.errors.map((error) => error.message).join(", "));
+    }
+
+    if (!result?.data?.orders) {
+      throw new Error("Shopify orders query returned no data");
+    }
+
     const ordersData = result.data.orders;
 
     allOrders = allOrders.concat(ordersData.edges);
@@ -73,48 +80,69 @@ export async function runTopSellerSync({ admin, shop }) {
   }
 
   let updatedProductsCount = 0;
+  let skippedLineItems = 0;
 
   const alreadyProcessed = await ProcessedDay.findOne({
     shop,
     date: yesterdayDateStr,
   });
 
-  if (!alreadyProcessed) {
+  const shouldSkip =
+    alreadyProcessed &&
+    alreadyProcessed.recordsUpdated > 0 &&
+    alreadyProcessed.orderCount === allOrders.length;
+
+  if (!shouldSkip) {
+    const aggregatedProducts = new Map();
+
     for (const orderEdge of allOrders) {
       const lineItems = orderEdge.node.lineItems?.edges || [];
 
       for (const itemEdge of lineItems) {
         const item = itemEdge.node;
         const product = item.variant?.product;
-        if (!product) continue;
+
+        if (!product?.id) {
+          skippedLineItems++;
+          continue;
+        }
 
         const productId = product.id.split("/").pop();
-        const quantitySold = item.quantity;
+        const quantitySold = Number(item.quantity) || 0;
+        const existingProduct = aggregatedProducts.get(productId);
 
-        await DailyProductSale.findOneAndUpdate(
-          {
-            shop,
-            date: yesterdayDateStr,
-            productId,
-          },
-          {
-            $inc: { soldQty: quantitySold },
-            $set: {
-              title: item.title || product.title || "Unknown Product",
-              handle: product.handle || null,
-              imageUrl: product.images?.edges?.[0]?.node?.url || null,
-              lastUpdatedAt: new Date(),
-            },
-            $setOnInsert: {
-              firstSeenAt: new Date(),
-            },
-          },
-          { upsert: true }
-        );
+        if (existingProduct) {
+          existingProduct.soldQty += quantitySold;
+          if (!existingProduct.imageUrl) {
+            existingProduct.imageUrl = product.images?.edges?.[0]?.node?.url || null;
+          }
+          continue;
+        }
 
-        updatedProductsCount++;
+        aggregatedProducts.set(productId, {
+          shop,
+          date: yesterdayDateStr,
+          productId,
+          title: item.title || product.title || "Unknown Product",
+          handle: product.handle || null,
+          imageUrl: product.images?.edges?.[0]?.node?.url || null,
+          soldQty: quantitySold,
+          firstSeenAt: new Date(),
+          lastUpdatedAt: new Date(),
+        });
       }
     }
+
+    await DailyProductSale.deleteMany({
+      shop,
+      date: yesterdayDateStr,
+    });
+
+    if (aggregatedProducts.size > 0) {
+      await DailyProductSale.insertMany([...aggregatedProducts.values()]);
+    }
+
+    updatedProductsCount = aggregatedProducts.size;
 
     await ProcessedDay.findOneAndUpdate(
       { shop, date: yesterdayDateStr },
@@ -122,6 +150,7 @@ export async function runTopSellerSync({ admin, shop }) {
         processedAt: new Date(),
         orderCount: allOrders.length,
         recordsUpdated: updatedProductsCount,
+        skippedLineItems,
       },
       { upsert: true }
     );
@@ -161,6 +190,9 @@ export async function runTopSellerSync({ admin, shop }) {
 
       const shopResponse = await admin.graphql(shopQuery);
       const shopResult = await shopResponse.json();
+      if (shopResult.errors?.length) {
+        throw new Error(shopResult.errors.map((error) => error.message).join(", "));
+      }
       const shopGid = shopResult.data.shop.id;
 
       const metafieldValue = JSON.stringify({
@@ -204,6 +236,11 @@ export async function runTopSellerSync({ admin, shop }) {
       });
 
       const metafieldResult = await metafieldResponse.json();
+      if (metafieldResult.errors?.length) {
+        throw new Error(
+          metafieldResult.errors.map((error) => error.message).join(", ")
+        );
+      }
 
       if (metafieldResult?.data?.metafieldsSet?.userErrors?.length) {
         throw new Error(
@@ -218,9 +255,10 @@ export async function runTopSellerSync({ admin, shop }) {
   return {
     ok: true,
     shop,
-    alreadyProcessed: Boolean(alreadyProcessed),
+    alreadyProcessed: Boolean(shouldSkip),
     orderCount: allOrders.length,
     updatedProductsCount,
+    skippedLineItems,
     date: yesterdayDateStr,
   };
 }
