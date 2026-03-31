@@ -28,10 +28,16 @@ function getRecentDateStrings(days = 7) {
   });
 }
 
+function isValidDateString(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const shopName = session.shop;
   const accessToken = session.accessToken;
+  const url = new URL(request.url);
+  const requestedDate = url.searchParams.get("date");
 
   await connectDataBase();
 
@@ -51,12 +57,19 @@ export const loader = async ({ request }) => {
     .lean();
 
   const recentDates = getRecentDateStrings();
-  const recentProducts = await DailyProductSale.find({
-    shop: shopName,
-    date: { $in: recentDates },
-  })
-    .sort({ date: -1, soldQty: -1, lastUpdatedAt: -1 })
-    .lean();
+  const selectedDate =
+    isValidDateString(requestedDate) && requestedDate
+      ? requestedDate
+      : latestProcessedDay?.date || recentDates[0] || "";
+
+  const selectedDateProducts = selectedDate
+    ? await DailyProductSale.find({
+        shop: shopName,
+        date: selectedDate,
+      })
+        .sort({ soldQty: -1, lastUpdatedAt: -1, title: 1 })
+        .lean()
+    : [];
 
   const topProduct = latestProcessedDay
     ? await DailyProductSale.findOne({
@@ -69,7 +82,7 @@ export const loader = async ({ request }) => {
 
   const normalizedShop = shopName.replace(".myshopify.com", "");
   const availableDates = recentDates;
-  const tableProducts = recentProducts.map((product) => ({
+  const tableProducts = selectedDateProducts.map((product) => ({
     id: product._id?.toString?.() ?? product.productId,
     imageUrl: product.imageUrl || null,
     title: product.title || "Unknown Product",
@@ -100,7 +113,7 @@ export const loader = async ({ request }) => {
     kpis,
     availableDates,
     tableProducts,
-    defaultFilterDate: latestProcessedDay?.date || availableDates[0] || "",
+    defaultFilterDate: selectedDate,
   });
 };
 

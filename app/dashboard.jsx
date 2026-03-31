@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigation, useSubmit } from "react-router";
 import "./styles/app._index.css";
 
 function formatDateTime(value) {
@@ -36,26 +37,29 @@ export default function Dashboard({
   tableProducts,
   defaultFilterDate,
 }) {
+  const submit = useSubmit();
+  const navigation = useNavigation();
   const [selectedDate, setSelectedDate] = useState(defaultFilterDate || "");
 
   useEffect(() => {
     setSelectedDate(defaultFilterDate || availableDates?.[0] || "");
   }, [defaultFilterDate, availableDates]);
 
-  const filteredProducts = useMemo(() => {
-    if (!tableProducts?.length) {
-      return [];
+  useEffect(() => {
+    if (!selectedDate || selectedDate === defaultFilterDate) {
+      return;
     }
 
-    if (!selectedDate) {
-      return tableProducts;
-    }
-
-    return tableProducts.filter((product) => product.date === selectedDate);
-  }, [tableProducts, selectedDate]);
+    submit({ date: selectedDate }, { method: "get" });
+  }, [defaultFilterDate, selectedDate, submit]);
 
   const dayOptions = availableDates || [];
   const hasDayOptions = dayOptions.length > 0;
+  const displayDate = selectedDate || defaultFilterDate;
+  const isLoadingDate = navigation.state !== "idle";
+  const emptyMessage = displayDate
+    ? `No product data found in DB for ${displayDate}.`
+    : "No orders sync";
 
   return (
     <div className="dashboard-shell">
@@ -87,7 +91,7 @@ export default function Dashboard({
           className="dashboard-card"
           style={{ marginTop: "14px", overflowX: "auto" }}
         >
-          <div
+          {/* <div
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -105,6 +109,7 @@ export default function Dashboard({
               >
                 Day filter
               </label>
+
               <select
                 id="day-filter"
                 value={selectedDate}
@@ -131,7 +136,7 @@ export default function Dashboard({
                 )}
               </select>
             </div>
-          </div>
+          </div> */}
 
           <table
             style={{
@@ -150,8 +155,8 @@ export default function Dashboard({
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
+              {tableProducts.length > 0 ? (
+                tableProducts.map((product) => (
                   <tr key={product.id} style={{ borderTop: "1px solid #edf3f9" }}>
                     <td style={tableCellStyle}>
                       {product.imageUrl ? (
@@ -215,7 +220,7 @@ export default function Dashboard({
                       color: "#7a8fa6",
                     }}
                   >
-                    No orders sync
+                    {isLoadingDate ? `Loading product data for ${displayDate}...` : emptyMessage}
                   </td>
                 </tr>
               )}

@@ -1,0 +1,1154 @@
+:root {
+    --lux-bg: #f7f4ef;
+    --lux-surface: #ffffff;
+    --lux-border: rgba(178, 175, 170, 0.22);
+    --lux-gold: rgb(0, 0, 0);
+    --lux-gold-lt: rgb(0, 0, 0);
+    --lux-white: #1a1612;
+    --lux-muted: rgba(26, 22, 18, 0.50);
+    --lux-ff-display: 'Cormorant Garamond', Georgia, serif;
+    --lux-ff-body: 'Jost', 'Helvetica Neue', sans-serif;
+    --lux-radius: 4px;
+    --lux-shadow: 0 12px 48px rgba(168, 130, 60, 0.18);
+    --lux-transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    --card-w: 292px;
+    --card-gap: 24px;
+}
+
+.shopify-app-block {
+    width: 100%;
+}
+
+/* ── Section ── */
+.lux-section {
+    background: var(--lux-bg);
+    padding: 30px 0 32px;
+    position: relative;
+    overflow: hidden;
+    font-family: var(--lux-ff-body);
+}
+
+.shopify-app-block {
+    width: 100%;
+}
+
+/* ── Heading ── */
+.lux-heading-wrap {
+    text-align: center;
+    margin-bottom: 15px;
+    position: relative;
+    z-index: 1;
+    padding: 0 20px;
+}
+
+.lux-eyebrow {
+    font-family: var(--lux-ff-body);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--lux-gold);
+    margin: 0 0 14px;
+}
+
+.more-option {
+    font-size: 12px;
+    line-height: 1.69;
+    vertical-align: bottom;
+    padding-left: 1px;
+}
+
+.lux-title {
+    font-family: var(--lux-ff-display);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 300;
+    color: #1a1612;
+    margin: 0 0 10px;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.lux-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--lux-gold);
+}
+
+.lux-divider span {
+    display: block;
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--lux-gold));
+}
+
+.lux-divider span:last-child {
+    background: linear-gradient(to left, transparent, var(--lux-gold));
+}
+
+.lux-divider svg {
+    width: 28px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+/* ── Track ── */
+.lux-track-outer {
+    position: relative;
+    z-index: 1;
+    padding: 12px 0 12px 10px;
+}
+
+.lux-track {
+    display: flex;
+    gap: var(--card-gap);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    align-items: stretch;
+}
+
+.lux-track::-webkit-scrollbar {
+    display: none;
+}
+
+/* ── Card ── */
+.lux-card {
+    flex: 0 0 var(--card-w);
+    width: var(--card-w);
+    background: var(--lux-surface);
+    border: 1px solid var(--lux-border);
+    border-radius: var(--lux-radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    scroll-snap-align: start;
+    transition: transform var(--lux-transition), box-shadow var(--lux-transition), border-color var(--lux-transition);
+    box-shadow: 0 4px 20px rgba(168, 130, 60, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+    height: stretch;
+}
+
+/* ── Badge ── */
+.lux-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 3;
+    font-family: var(--lux-ff-body);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--lux-bg);
+    background: var(--lux-gold);
+    padding: 2px 6px;
+    border-radius: 2px;
+}
+
+/* ── Image ── */
+.lux-img-wrap {
+    position: relative;
+    height: auto;
+    overflow: hidden;
+    flex-shrink: 0;
+    padding: 5px;
+
+}
+
+.lux-img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    display: block;
+    object-position: top;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lux-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+    pointer-events: none;
+}
+
+/* ── Info Block ── */
+.lux-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    padding: 10px;
+    gap: 0;
+    border-top: 1px solid var(--lux-border);
+}
+
+.lux-info-top {
+    margin-bottom: 8px;
+}
+
+.lux-prod-title {
+    font-family: var(--lux-ff-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--lux-white);
+    margin: 0 0 8px;
+    letter-spacing: 0.2px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.lux-prod-desc {
+    font-size: 12px;
+    color: var(--lux-muted);
+    line-height: 1.6;
+    margin: 0;
+    font-weight: 300;
+    letter-spacing: 0.2px;
+}
+
+.lux-info-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ── Price + Qty Row ── */
+.lux-price-qty-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.lux-price-col {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.lux-price {
+    font-family: var(--lux-ff-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--lux-gold-lt);
+    letter-spacing: -0.5px;
+    transition: all 0.2s;
+}
+
+.lux-compare {
+    font-size: 13px;
+    color: var(--lux-muted);
+    text-decoration: line-through;
+    font-weight: 300;
+}
+
+/* ── Quantity ── */
+.lux-qty {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--lux-border);
+    border-radius: var(--lux-radius);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.lux-qty-input {
+    width: 45px;
+    height: 32px;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--lux-border);
+    border-right: 1px solid var(--lux-border);
+    color: var(--lux-white);
+    font-family: var(--lux-ff-body);
+    font-size: 13px;
+    font-weight: 400;
+    -moz-appearance: textfield;
+}
+
+.lux-qty-btn {
+    width: 30px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    color: var(--lux-gold);
+    font-size: 18px;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--lux-transition);
+    line-height: 1;
+}
+
+.lux-qty-btn:hover {
+    background: rgba(168, 130, 60, 0.08);
+}
+
+.lux-qty-input::-webkit-inner-spin-button,
+.lux-qty-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+
+/* ── Add to Cart Button ── */
+.lux-form {
+    margin: 0;
+}
+
+.lux-atc {
+    width: 100%;
+    padding: 13px 16px;
+    background: transparent;
+    border: 1px solid var(--lux-gold);
+    color: var(--lux-gold);
+    font-family: var(--lux-ff-body);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-radius: var(--lux-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background var(--lux-transition), color var(--lux-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.lux-atc::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--lux-gold);
+    transform: translateX(-101%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+}
+
+.lux-atc:hover::before {
+    transform: translateX(0);
+}
+
+.lux-atc:hover {
+    color: #fff;
+}
+
+.lux-atc-text {
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Size Pills ── */
+.lux-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-top: 6px;
+}
+
+.lux-pill {
+    padding: 2px 8px;
+    font-family: var(--lux-ff-body);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    color: var(--lux-white);
+    background: transparent;
+    border: 1px solid rgba(26, 22, 18, 0.20);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    line-height: 1.7;
+}
+
+.lux-pill:hover {
+    border-color: var(--lux-white);
+}
+
+.lux-pill.active {
+    background: var(--lux-white);
+    color: #fff;
+    border-color: var(--lux-white);
+}
+
+.lux-pill.sold-out {
+    opacity: 0.32;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+/* ── Color Swatches ── */
+.lux-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+    margin-left: 2px !important;
+}
+
+.lux-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    outline: none;
+    transition: transform 0.18s;
+}
+
+.lux-swatch::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+    transition: border-color 0.18s;
+}
+
+.lux-swatch:hover::after,
+.lux-swatch.active::after {
+    border-color: var(--lux-white);
+}
+
+.lux-swatch.sold-out {
+    opacity: 0.32;
+    cursor: not-allowed;
+}
+
+/* ── Arrows ── */
+.lux-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--lux-border);
+    color: var(--lux-gold);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: background var(--lux-transition), border-color var(--lux-transition);
+    backdrop-filter: blur(8px);
+}
+
+.lux-arrow:hover {
+    background: rgba(185, 152, 90, 0.15);
+    border-color: var(--lux-gold);
+}
+
+.lux-arrow svg {
+    width: 18px;
+    height: 18px;
+}
+
+.lux-arrow--prev {
+    left: 14px;
+}
+
+.lux-arrow--next {
+    right: 14px;
+}
+
+.lux-arrow.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ── Dots ── */
+.lux-dots {
+    display: none;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 32px;
+    position: relative;
+    z-index: 1;
+}
+
+.lux-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(185, 152, 90, 0.25);
+    border: 1px solid var(--lux-gold);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.lux-dot.active {
+    background: var(--lux-gold);
+    width: 20px;
+    border-radius: 3px;
+}
+
+/* ══════════════════════════════════════
+     QUICK VIEW MODAL
+  ══════════════════════════════════════ */
+.qv-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 12, 8, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 9998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.32s ease;
+}
+
+.qv-backdrop.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.qv-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -48%) scale(0.97);
+    z-index: 9999;
+    width: min(900px, 94vw);
+    max-height: 90vh;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: var(--lux-ff-body);
+}
+
+.qv-modal.open {
+    opacity: 1;
+    pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.qv-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.qv-close:hover {
+    background: #f0ede8;
+}
+
+.qv-close svg {
+    width: 16px;
+    height: 16px;
+    color: #333;
+}
+
+.qv-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Gallery - see layout rules below */
+.qv-thumbs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.qv-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 3px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: border-color 0.18s;
+    flex-shrink: 0;
+}
+
+.qv-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.qv-thumb.active {
+    border-color: #1a1612;
+}
+
+/* Info panel - see layout rules below */
+.qv-eyebrow {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(26, 22, 18, 0.40);
+    margin: 0;
+}
+
+.qv-title {
+    font-family: var(--lux-ff-display);
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 400;
+    color: #1a1612;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.qv-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.qv-price {
+    font-family: var(--lux-ff-display);
+    font-size: 26px;
+    font-weight: 600;
+    color: #1a1612;
+    transition: all 0.2s;
+}
+
+.qv-compare {
+    font-size: 15px;
+    color: rgba(26, 22, 18, 0.40);
+    text-decoration: line-through;
+    font-weight: 300;
+}
+
+/* QV Variants */
+.qv-variants {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.qv-option-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(26, 22, 18, 0.55);
+    margin: 0 0 6px;
+}
+
+.qv-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.qv-pill {
+    padding: 5px 14px;
+    font-family: var(--lux-ff-body);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.4px;
+    color: #1a1612;
+    background: transparent;
+    border: 1px solid rgba(26, 22, 18, 0.22);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.18s;
+    line-height: 1.6;
+}
+
+.qv-pill:hover {
+    border-color: #1a1612;
+}
+
+.qv-pill.active {
+    background: #1a1612;
+    color: #fff;
+    border-color: #1a1612;
+}
+
+.qv-pill.sold-out {
+    opacity: 0.30;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+.qv-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.qv-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    outline: none;
+    transition: transform 0.18s;
+}
+
+.qv-swatch::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    transition: border-color 0.18s;
+}
+
+.qv-swatch.active::after,
+.qv-swatch:hover::after {
+    border-color: #1a1612;
+}
+
+.qv-swatch.sold-out {
+    opacity: 0.30;
+    cursor: not-allowed;
+}
+
+/* QV Actions */
+.qv-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.qv-qty {
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(26, 22, 18, 0.20);
+    border-radius: 3px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.qv-qty-btn {
+    width: 38px;
+    height: 44px;
+    background: transparent;
+    border: none;
+    color: #1a1612;
+    font-size: 20px;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s;
+    line-height: 1;
+}
+
+.qv-qty-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.qv-qty-input {
+    width: 48px;
+    height: 44px;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-left: 1px solid rgba(26, 22, 18, 0.20);
+    border-right: 1px solid rgba(26, 22, 18, 0.20);
+    color: #1a1612;
+    font-family: var(--lux-ff-body);
+    font-size: 14px;
+    font-weight: 400;
+    -moz-appearance: textfield;
+}
+
+.qv-qty-input::-webkit-inner-spin-button,
+.qv-qty-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+
+.qv-atc-btn {
+    flex: 1;
+    height: 44px;
+    background: #1a1612;
+    color: #fff;
+    border: none;
+    font-family: var(--lux-ff-body);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.22s;
+}
+
+.qv-atc-btn:hover {
+    background: #2e2820;
+}
+
+.qv-atc-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.qv-atc-btn.success {
+    background: #2d6a4f;
+}
+
+.qv-link-wrap {
+    margin: 0;
+}
+
+.qv-link {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    color: rgba(26, 22, 18, 0.45);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(26, 22, 18, 0.20);
+    transition: color 0.18s, border-color 0.18s;
+}
+
+.qv-link:hover {
+    color: #1a1612;
+    border-color: #1a1612;
+}
+
+/* ── QV Main Image Wrap ── */
+.qv-main-img-wrap {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 4px;
+    min-height: 200px;
+}
+
+.qv-main-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px;
+    transition: opacity 0.22s;
+}
+
+/* ── QV Image Slider Arrows ── */
+.qv-img-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.90);
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    transition: background 0.18s;
+    backdrop-filter: blur(4px);
+}
+
+.qv-img-arrow:hover {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.qv-img-arrow svg {
+    width: 16px;
+    height: 16px;
+    color: #1a1612;
+}
+
+.qv-img-prev {
+    left: 10px;
+}
+
+.qv-img-next {
+    right: 10px;
+}
+
+.qv-img-arrow:disabled {
+    opacity: 0.20;
+    pointer-events: none;
+}
+
+.qv-img-counter {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.20);
+    padding: 4px 8px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.qv-img-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.45);
+    border: none;
+    padding: 0;
+    transition: all 0.22s;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.qv-img-dot.active {
+    background: #fff;
+    width: 16px;
+    border-radius: 3px;
+}
+
+/* ── RESPONSIVE: Desktop modal fix ── */
+.qv-modal {
+    max-height: min(90vh, 700px);
+}
+
+.qv-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+    height: 100%;
+    min-height: 0;
+}
+
+.qv-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+    background: #f7f4ef;
+    overflow: hidden;
+}
+
+.qv-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 28px 28px 24px;
+    overflow-y: auto;
+}
+
+/* ── RESPONSIVE: Mobile ── */
+@media (max-width: 640px) {
+    .qv-modal {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: 92dvh;
+        border-radius: 18px 18px 0 0;
+        transform: translateY(101%);
+        transition: transform 0.35s cubic-bezier(0.3, 0, 0.2, 1);
+        opacity: 1;
+        overflow: hidden;
+    }
+
+    .lux-pill {
+        font-size: 8px;
+        width: 36.99px;
+    }
+
+    .qv-modal.open {
+        transform: translateY(0);
+    }
+
+    .qv-body {
+        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        max-height: 92dvh;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .qv-gallery {
+        flex-shrink: 0;
+        padding: 0;
+        gap: 0;
+        border-radius: 18px 18px 0 0;
+        overflow: hidden;
+    }
+
+    .qv-main-img-wrap {
+        flex: 1;
+        height: 100%;
+        border-radius: 0;
+    }
+
+    .qv-main-img {
+        border-radius: 0;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .qv-thumbs {
+        display: none;
+    }
+
+    .qv-info {
+        padding: 20px 18px 32px;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .qv-title {
+        font-size: 20px;
+    }
+
+    .qv-price {
+        font-size: 22px;
+    }
+
+    .qv-actions {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .qv-qty {
+        flex: 0 0 auto;
+    }
+
+    .qv-atc-btn {
+        height: 46px;
+    }
+
+    .qv-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        z-index: 20;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Mobile: modal already positioned by transform, backdrop needs different transition */
+}
+
+/* Card responsive */
+@media (min-width: 1400px) {
+    :root {
+        --card-w: 300px;
+        --card-gap: 5px;
+    }
+}
+
+@media (min-width: 1025px) and (max-width: 1399px) {
+    :root {
+        --card-w: 280px;
+        --card-gap: 5px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    :root {
+        --card-w: 268px;
+        --card-gap: 5px;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    :root {
+        --card-w: 240px;
+        --card-gap: 6px;
+    }
+
+    .lux-section {
+        padding: 30px 0 36px;
+    }
+
+    .lux-heading-wrap {
+        margin-bottom: 40px;
+    }
+
+    .lux-img-wrap {
+        height: auto;
+    }
+
+    .lux-arrow {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --card-w: 220px;
+        --card-gap: 4px;
+    }
+
+    .lux-section {
+        padding: 38px 0 38px;
+    }
+
+    .lux-heading-wrap {
+        margin-bottom: 15px;
+    }
+
+    .lux-img-wrap {
+        height: auto;
+    }
+
+    .lux-arrow {
+        display: none;
+    }
+
+    .lux-prod-title {
+        font-size: 14px;
+    }
+
+    .lux-price {
+        font-size: 20px;
+    }
+
+    .lux-info {
+        padding: 10px 7px 8px;
+    }
+
+    .lux-atc {
+        font-size: 9px;
+        padding: 12px 14px;
+        letter-spacing: 2px;
+    }
+}
