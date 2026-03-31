@@ -66,7 +66,7 @@ export default function Dashboard({
       <div className="dashboard-frame">
         <div className="summary-grid">
           <KpiCard
-            title="Top Product Yesterday"
+            title="Top Product Last 24 HRS"
             value={kpis.topProductName}
             detail={kpis.topProductDetail}
           />
@@ -181,7 +181,7 @@ export default function Dashboard({
                             background: "#f7fafd",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            justifyContent: "flex-start",
                             fontSize: "11px",
                             fontWeight: 700,
                             color: "#7a8fa6",
@@ -246,4 +246,5 @@ const tableCellStyle = {
   fontWeight: 700,
   color: "#31557d",
   verticalAlign: "middle",
+  textAlign: "left",
 };

@@ -7,7 +7,7 @@
 
 {{ 'daywise.css' | asset_url | stylesheet_tag }}
 
-<section class="lux-section">
+<section id="lux-section-{{ section.id }}" class="lux-section lux-section--seven-days">
   <!-- Section Heading -->
   <div class="lux-heading-wrap">
     <p class="lux-eyebrow">{{block.settings.subheading | default: 'LAST 7 DAYS'}}</p>
@@ -35,17 +35,27 @@
         {%- endcomment %}
 
         {%- assign product = all_products[top.handle] -%}
+        {%- assign title_text = top.title | downcase -%}
+        {%- assign should_hide_product = false -%}
 
-        {%- unless product == empty -%}
+        {%- if title_text contains 'gift' or title_text contains 'mystry box' or title_text contains 'mystery box' -%}
+          {%- assign should_hide_product = true -%}
+        {%- endif -%}
+
+        {%- if product == empty or product.price <= 0 -%}
+          {%- assign should_hide_product = true -%}
+        {%- endif -%}
+
+        {%- unless should_hide_product -%}
           <article class="lux-card">
             <!-- Badge -->
-             <div class="lux-badge">{{top.totalSold}} Sold in the last 7 days</div>
+            
             <!-- Image -->
             <div class="lux-img-wrap">
               {%- if top.imageUrl -%}
                 <img
                   src="{{ top.imageUrl }}"
-                  alt="{{ top.title | escape }}"
+                  alt="{{ top.title | escape }}" 
                   class="lux-img"
                   loading="lazy"
                   width="500"
@@ -73,6 +83,12 @@
               data-option-names="{{ option_names_str }}"
             >
               <div class="lux-info-top">
+               <div class="lux-badge-clone">  
+               
+                 
+ 
+                <p class="top_seller_badge"> <span class="pulse-dot" style="display: block;"></span> {{top.totalSold}} Sold in the last 7 days</p>
+
                 <h3 class="lux-prod-title">{{ top.title }}</h3>
 
                 <!-- SIZE pills -->
@@ -266,7 +282,7 @@
 
 {% schema %}
 {
-  "name": "Top Selling Products",
+  "name": "Last 7 days Products",
   "target":"section",
   "settings": [
     {

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
 :root {
     --lux-bg: #f7f4ef;
     --lux-surface: #ffffff;
@@ -6,8 +8,8 @@
     --lux-gold-lt: rgb(0, 0, 0);
     --lux-white: #1a1612;
     --lux-muted: rgba(26, 22, 18, 0.50);
-    --lux-ff-display: 'Cormorant Garamond', Georgia, serif;
-    --lux-ff-body: 'Jost', 'Helvetica Neue', sans-serif;
+    --lux-ff-display: "Montserrat", sans-serif;
+    --lux-ff-body: "Montserrat", sans-serif;
     --lux-radius: 4px;
     --lux-shadow: 0 12px 48px rgba(168, 130, 60, 0.18);
     --lux-transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -17,6 +19,10 @@
 
 .shopify-app-block {
     width: 100%;
+}
+
+[id^="lux-section-"] {
+    font-family: "Montserrat", sans-serif;
 }
 
 /* ── Section ── */
@@ -223,6 +229,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    margin-top:6px;
 }
 
 .lux-price-col {
@@ -963,6 +970,53 @@
     padding: 28px 28px 24px;
     overflow-y: auto;
 }
+
+
+.top_seller_badge {
+display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    margin: 0 !important;
+    color: #fff;
+    text-transform: uppercase;
+    line-height: normal;
+    background: green;
+    padding: 2px 6px;
+    margin-bottom: 9px;
+    font-size: 12px;
+    border-radius: 2px;
+    position: absolute;
+    top: -40px;
+    left: -2px;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+}
+       .pulse-dot {
+            position: relative;
+            z-index: 1;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #61ff9b;
+            box-shadow: 0 0 0 rgba(97, 255, 155, 0.7);
+            flex-shrink: 0;
+            animation: dotPulse 1.4s infinite;
+        }
+ @keyframes dotPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(97, 255, 155, 0.7);
+            }
+            70% {
+                transform: scale(1.15);
+                box-shadow: 0 0 0 10px rgba(97, 255, 155, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(97, 255, 155, 0);
+            }
+        }
+ 
 
 /* ── RESPONSIVE: Mobile ── */
 @media (max-width: 640px) {

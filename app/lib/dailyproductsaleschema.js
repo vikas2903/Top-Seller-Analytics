@@ -45,6 +45,12 @@ const DailyProductSaleSchema = new mongoose.Schema(
       default: 0,
     },
 
+    price: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+
     firstSeenAt: {
       type: Date,
       default: Date.now,         // set only once when document is created

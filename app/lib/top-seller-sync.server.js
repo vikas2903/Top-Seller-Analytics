@@ -3,6 +3,18 @@ import connectDataBase from "../lib/db.js";
 import { ProcessedDay } from "../lib/processeddayschema.js";
 import DailyProductSale from "../lib/dailyproductsaleschema.js";
 
+function shouldSkipProduct({ title, price }) {
+  const normalizedTitle = String(title || "").toLowerCase();
+  const normalizedPrice = Number(price) || 0;
+
+  return (
+    normalizedTitle.includes("gift") ||
+    normalizedTitle.includes("mystry box") ||
+    normalizedTitle.includes("mystery box") ||
+    normalizedPrice <= 0
+  );
+}
+
 async function getShopGid(admin) {
   const shopQuery = `
     query GetShopId {
@@ -44,6 +56,7 @@ async function updateTopSellerMetafields({
           handle: product.handle,
           imageUrl: product.imageUrl,
           totalSold: product.totalSold,
+          price: product.price,
         })),
       }),
     },
@@ -61,6 +74,7 @@ async function updateTopSellerMetafields({
           handle: product.handle,
           imageUrl: product.imageUrl,
           soldQty: product.soldQty,
+          price: product.price,
         })),
       }),
     },
@@ -133,6 +147,7 @@ export async function runTopSellerSync({ admin, shop }) {
                   quantity
                   title
                   variant {
+                    price
                     product {
                       id
                       title
@@ -202,8 +217,15 @@ export async function runTopSellerSync({ admin, shop }) {
       for (const itemEdge of lineItems) {
         const item = itemEdge.node;
         const product = item.variant?.product;
+        const variantPrice = item.variant?.price;
+        const productTitle = item.title || product?.title || "Unknown Product";
 
         if (!product?.id) {
+          skippedLineItems++;
+          continue;
+        }
+
+        if (shouldSkipProduct({ title: productTitle, price: variantPrice })) {
           skippedLineItems++;
           continue;
         }
@@ -224,10 +246,11 @@ export async function runTopSellerSync({ admin, shop }) {
           shop,
           date: yesterdayDateStr,
           productId,
-          title: item.title || product.title || "Unknown Product",
+          title: productTitle,
           handle: product.handle || null,
           imageUrl: product.images?.edges?.[0]?.node?.url || null,
           soldQty: quantitySold,
+          price: Number(variantPrice) || 0,
           firstSeenAt: new Date(),
           lastUpdatedAt: new Date(),
         });
@@ -277,6 +300,7 @@ export async function runTopSellerSync({ admin, shop }) {
           title: { $first: "$title" },
           handle: { $first: "$handle" },
           imageUrl: { $first: "$imageUrl" },
+          price: { $first: "$price" },
         },
       },
       { $sort: { totalSold: -1 } },
