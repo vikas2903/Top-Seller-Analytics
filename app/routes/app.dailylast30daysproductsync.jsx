@@ -73,6 +73,7 @@ export const getOrders = async ({ admin }) => {
   `;
 
   while (hasNextPage) {
+    
     const response = await admin.graphql(query, { variables: { cursor } });
     const responseJson = await response.json();
     assertGraphqlSuccess(responseJson, "Orders query failed");
@@ -85,8 +86,8 @@ export const getOrders = async ({ admin }) => {
 
   await buildCollectionSalesMap(allOrders, admin);
 
-  return allOrders;
-};
+  return allOrders; 
+}; 
 
 const buildCollectionSalesMap = async (orders, admin) => {
   const collectionMap = {};
