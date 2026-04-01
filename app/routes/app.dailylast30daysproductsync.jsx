@@ -23,7 +23,7 @@ export const loader = async ({ request }) => {
   return json({ shop, allOrders });
 };
 
-const getOrders = async ({ admin }) => {
+export const getOrders = async ({ admin }) => {
   let allOrders = [];
   let cursor = null;
   let hasNextPage = true;
@@ -277,6 +277,5 @@ const saveAllCollections = async (top10PerCollection, admin) => {
 
 export default function Last30DaysOrders() {
   useLoaderData();
-
   return <>Loading...</>;
 }
