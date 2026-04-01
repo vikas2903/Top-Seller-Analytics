@@ -13,7 +13,6 @@ const DailyProductSaleSchema = new mongoose.Schema(
     date: {
       type: String,
       required: true,
-      index: true,               // helps with date-range cleanup
     },
 
     productId: {

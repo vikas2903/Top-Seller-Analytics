@@ -21,6 +21,7 @@ export default function App() {
         {/* <s-link href="/app/additional">Additional page</s-link> */}
         {/* <s-link href="/app/topselling">Products</s-link> */}
         <s-link href="/app/products">Products</s-link>
+        <s-link href="/api/cron-dailyordersync-last30days">Last 30 Days Orders Sync</s-link>
       </s-app-nav>
       <Outlet />
     </AppProvider>

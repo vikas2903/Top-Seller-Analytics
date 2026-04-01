@@ -223,13 +223,22 @@
     gap: 14px;
 }
 
+.lux-badge-clone {
+    position: relative;
+}
+
+.lux-info-top {
+    margin-bottom: 8px;
+    position: relative;
+}
+
 /* ── Price + Qty Row ── */
 .lux-price-qty-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-top:6px;
+    margin-top: 6px;
 }
 
 .lux-price-col {
@@ -973,50 +982,55 @@
 
 
 .top_seller_badge {
-display: inline-flex;
+    display: inline-flex;
     align-items: center;
     justify-content: flex-start;
     gap: 6px;
     margin: 0 !important;
-    color: #fff;
-    text-transform: uppercase;
-    line-height: normal;
     background: green;
-    padding: 2px 6px;
-    margin-bottom: 9px;
-    font-size: 12px;
-    border-radius: 2px;
     position: absolute;
     top: -40px;
     left: -2px;
     box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+    border-radius: 2px;
+    line-height: 1;
+    font-size: 10px;
+    color: #fff;
+    padding: 6px 19px 6px 7px;
+    text-transform: uppercase;
+    clip-path: polygon(100% 0%, 96% 50%, 100% 100%, 0 100%, 0% 50%, 0 0);
+    font-weight: 500;
 }
-       .pulse-dot {
-            position: relative;
-            z-index: 1;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #61ff9b;
-            box-shadow: 0 0 0 rgba(97, 255, 155, 0.7);
-            flex-shrink: 0;
-            animation: dotPulse 1.4s infinite;
-        }
- @keyframes dotPulse {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(97, 255, 155, 0.7);
-            }
-            70% {
-                transform: scale(1.15);
-                box-shadow: 0 0 0 10px rgba(97, 255, 155, 0);
-            }
-            100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(97, 255, 155, 0);
-            }
-        }
- 
+
+.pulse-dot {
+    position: relative;
+    z-index: 1;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #61ff9b;
+    box-shadow: 0 0 0 rgba(97, 255, 155, 0.7);
+    flex-shrink: 0;
+    animation: dotPulse 1.4s infinite;
+}
+
+@keyframes dotPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(97, 255, 155, 0.7);
+    }
+
+    70% {
+        transform: scale(1.15);
+        box-shadow: 0 0 0 10px rgba(97, 255, 155, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(97, 255, 155, 0);
+    }
+}
+
 
 /* ── RESPONSIVE: Mobile ── */
 @media (max-width: 640px) {

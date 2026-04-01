@@ -1,0 +1,263 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap"
+  rel="stylesheet"
+>
+
+{{ 'daywise.css' | asset_url | stylesheet_tag }}
+
+<section id="lux-section-{{ section.id }}" class="lux-section lux-section--collection-wise">
+  <div class="lux-heading-wrap">
+    <p class="lux-eyebrow">{{ block.settings.subheading | default: 'COLLECTION BEST SELLERS' }}</p>
+    <h2 class="lux-title">{{ block.settings.heading | default: collection.title }}</h2>
+    <div class="lux-divider">
+      <span></span>
+      <svg viewBox="0 0 24 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 5L0 5M12 5L24 5M12 5C12 5 10 1 8 5C6 9 4 5 4 5M12 5C12 5 14 1 16 5C18 9 20 5 20 5" stroke="currentColor" stroke-width="0.8"/>
+      </svg>
+      <span></span>
+    </div>
+  </div>
+
+  <div class="lux-track-outer">
+    <div class="lux-track" id="luxTrack">
+      {%- assign top_data = collection.metafields.top_sellers_collection_wise.top_products_collection_wise.value | parse_json -%}
+
+      {%- if top_data.products.size > 0 -%}
+        {%- for top in top_data.products -%}
+          {%- assign product_numeric_id = top.productId | split: '/' | last -%}
+          {%- assign matched_product = blank -%}
+
+          {%- for collection_product in collection.products -%}
+            {%- assign collection_product_id = collection_product.id | append: '' -%}
+            {%- if collection_product_id == product_numeric_id -%}
+              {%- assign matched_product = collection_product -%}
+              {%- break -%}
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- assign title_text = top.title | downcase -%}
+          {%- assign should_hide_product = false -%}
+
+          {%- if title_text contains 'gift' or title_text contains 'mystry box' or title_text contains 'mystery box' -%}
+            {%- assign should_hide_product = true -%}
+          {%- endif -%}
+
+          {%- if matched_product == blank or matched_product.price <= 0 -%}
+            {%- assign should_hide_product = true -%}
+          {%- endif -%}
+
+          {%- unless should_hide_product -%}
+            <article class="lux-card">
+              <div class="lux-img-wrap">
+                {%- if matched_product.featured_image -%}
+                  <img
+                    src="{{ matched_product.featured_image | image_url: width: 900 }}"
+                    alt="{{ matched_product.title | escape }}"
+                    class="lux-img"
+                    loading="lazy"
+                    width="500"
+                    height="667"
+                  >
+                {%- else -%}
+                  <div style="height: 220px; background: #f5f5f5; display: flex; align-items: center; justify-content: center;">
+                    No Image
+                  </div>
+                {%- endif -%}
+                <div class="lux-img-overlay"></div>
+              </div>
+
+              {%- assign variants_json = matched_product.variants | json | escape -%}
+              {%- assign images_json = matched_product.images | json | escape -%}
+              {%- assign option_names_str = matched_product.options | join: '|' | escape -%}
+
+              <div
+                class="lux-info"
+                data-variants="{{ variants_json }}"
+                data-images="{{ images_json }}"
+                data-product-title="{{ matched_product.title | escape }}"
+                data-product-url="{{ matched_product.url }}"
+                data-option-names="{{ option_names_str }}"
+              >
+                <div class="lux-info-top">
+                  <p class="top_seller_badge"><span class="pulse-dot" style="display: block;"></span> {{ top.totalQuantity }} Sold in this collection</p>
+
+                  <h3 class="lux-prod-title">{{ matched_product.title }}</h3>
+
+                  {% for option in matched_product.options_with_values %}
+                    {% assign opt_lower = option.name | downcase %}
+                    {% if opt_lower == 'size' %}
+                      <div class="lux-pills" data-option-index="{{ forloop.index0 }}">
+                        {% for value in option.values %}
+                          {% if forloop.index <= 5 %}
+                            <button
+                              type="button"
+                              class="lux-pill{% if forloop.first %} active{% endif %}"
+                              data-value="{{ value | escape }}"
+                              data-option-index="{{ forloop.parentloop.index0 }}"
+                            >
+                              {{ value }}
+                            </button>
+                          {% endif %}
+                          {% if forloop.index > 5 %}
+                            {% assign option_length = forloop.length %}
+                            {% assign remening_length = option_length | minus: 5 %}
+                            <span class="more-option">+{{ remening_length }} More</span>{% break %}
+                          {% endif %}
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+
+                  {% for option in matched_product.options_with_values %}
+                    {% assign opt_lower = option.name | downcase %}
+                    {% if opt_lower == 'color' or opt_lower == 'colour' %}
+                      <div class="lux-swatches" data-option-index="{{ forloop.index0 }}">
+                        {% for value in option.values %}
+                          {% if forloop.index <= 5 %}
+                            <button
+                              type="button"
+                              class="lux-swatch{% if forloop.first %} active{% endif %}"
+                              data-value="{{ value | escape }}"
+                              data-option-index="{{ forloop.parentloop.index0 }}"
+                              style="background:{{ value | downcase }};"
+                              title="{{ value | escape }}"
+                              aria-label="{{ value | escape }}"
+                            ></button>
+                          {% endif %}
+                          {% if forloop.index > 5 %}
+                            {% assign color_varients = forloop.length %}
+                            {% assign remaining_color_swathes = color_varients | minus: 5 %}
+                            <span class="more-option">+{{ remaining_color_swathes }}More </span>{% break %}
+                          {% endif %}
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+
+                <div class="lux-info-bottom">
+                  <div class="lux-price-qty-row">
+                    <div class="lux-price-col">
+                      <span class="lux-price">{{ matched_product.price | money_with_currency | remove: '.00' }}</span>
+                      {% if matched_product.compare_at_price > matched_product.price %}
+                        <span class="lux-compare">
+                          {{ matched_product.compare_at_price | money_with_currency | remove: '.00' }}
+                        </span>
+                      {% endif %}
+                    </div>
+                    <div class="lux-qty">
+                      <button type="button" class="lux-qty-btn" data-action="minus" aria-label="Decrease quantity">−</button>
+                      <input type="number" class="lux-qty-input" value="1" min="1" aria-label="Quantity" readonly>
+                      <button type="button" class="lux-qty-btn" data-action="plus" aria-label="Increase quantity">+</button>
+                    </div>
+                  </div>
+
+                  <button type="button" class="lux-atc lux-qv-trigger">
+                    <span class="lux-atc-text">Add to Cart</span>
+                  </button>
+                </div>
+              </div>
+            </article>
+          {%- endunless -%}
+        {%- endfor -%}
+      {%- else -%}
+        <div style="width: 100%; text-align: center; padding: 24px 16px; color: #777;">
+          No collection metafield product data available yet.
+        </div>
+      {%- endif -%}
+    </div>
+
+    <button class="lux-arrow lux-arrow--prev" id="luxPrev" aria-label="Previous">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="lux-arrow lux-arrow--next" id="luxNext" aria-label="Next">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="lux-dots" id="luxDots"></div>
+</section>
+
+<div class="qv-backdrop" id="qvBackdrop" aria-hidden="true"></div>
+<div class="qv-modal" id="qvModal" role="dialog" aria-modal="true" aria-label="Quick View">
+  <button class="qv-close" id="qvClose" aria-label="Close">
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <div class="qv-body">
+    <div class="qv-gallery">
+      <div class="qv-main-img-wrap">
+        <img src="" alt="" class="qv-main-img" id="qvMainImg">
+        <button class="qv-img-arrow qv-img-prev" id="qvImgPrev" aria-label="Previous image">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="qv-img-arrow qv-img-next" id="qvImgNext" aria-label="Next image">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="qv-img-counter" id="qvImgCounter"></div>
+      </div>
+      <div class="qv-thumbs" id="qvThumbs"></div>
+    </div>
+
+    <div class="qv-info">
+      <p class="qv-eyebrow">Quick View</p>
+      <h2 class="qv-title" id="qvTitle"></h2>
+
+      <div class="qv-price-row">
+        <span class="qv-price" id="qvPrice"></span>
+        <span class="qv-compare" id="qvCompare"></span>
+      </div>
+
+      <div class="qv-variants" id="qvVariants"></div>
+
+      <div class="qv-actions">
+        <div class="qv-qty">
+          <button type="button" class="qv-qty-btn" data-action="minus">−</button>
+          <input type="number" class="qv-qty-input" id="qvQty" value="1" min="1" readonly>
+          <button type="button" class="qv-qty-btn" data-action="plus">+</button>
+        </div>
+        <button type="button" class="qv-atc-btn" id="qvAtcBtn">
+          <span id="qvAtcText">Add to Cart</span>
+        </button>
+      </div>
+
+      <p class="qv-link-wrap"><a class="qv-link" id="qvLink" href="#">View full details →</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="{{ 'daywise.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Collection Best Sellers",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "label": "Section Heading",
+      "id": "heading",
+      "default": "Collection Best Sellers"
+    },
+    {
+      "type": "text",
+      "label": "Sub Heading",
+      "id": "subheading",
+      "default": "COLLECTION BEST SELLERS"
+    }
+  ]
+}
+{% endschema %}
+ 
