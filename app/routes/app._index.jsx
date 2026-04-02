@@ -1,6 +1,6 @@
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { json } from "@remix-run/node";
-import { Page, Layout } from "@shopify/polaris";
+import { Page, Layout, Card, BlockStack, Button, InlineStack, Text } from "@shopify/polaris";
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import connectDataBase from "../lib/db.js";
@@ -123,6 +123,25 @@ export default function Index() {
   return (
     <Page>
       <Layout>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">
+                Next step for merchants
+              </Text>
+              <Text as="p" tone="subdued">
+                Open the Blocks Guide to choose the right best-seller block, pick a theme, and go
+                directly to the Shopify customizer for home or collection pages.
+              </Text>
+              <InlineStack gap="200">
+                <Button variant="primary" url="/app/blocks-guide">
+                  Open Blocks Guide
+                </Button>
+                <Button url="/app/dailylast30daysproductsync">Run sync</Button>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
         <Layout.Section>
           <Dashboard
             kpis={kpis}

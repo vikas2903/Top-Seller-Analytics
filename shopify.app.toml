@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "57cba50f7828bfbeb1800e8062e1b437"
-name = "TopSeller Analytics"
+name = "TopSelling Products"
 application_url = "https://top-seller-analytics.onrender.com"
 embedded = true
 

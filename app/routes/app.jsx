@@ -17,8 +17,9 @@ export default function App() {
   return (
     <AppProvider embedded apiKey={apiKey}>
       <s-app-nav>
-        <s-link href="/app/products">Products</s-link>
-        <s-link href="/app/dailylast30daysproductsync">Last 30 Days Orders Sync</s-link>
+        <s-link href="/app/blocks-guide">Blocks Guide</s-link>
+        {/* <s-link href="/app/products">Products</s-link>
+        <s-link href="/app/dailylast30daysproductsync">Last 30 Days Orders Sync</s-link> */}
       </s-app-nav>
       <Outlet />
     </AppProvider>
