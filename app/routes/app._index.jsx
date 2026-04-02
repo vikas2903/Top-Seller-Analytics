@@ -1,13 +1,25 @@
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { json } from "@remix-run/node";
-import { Page, Layout, Card, BlockStack, Button, InlineStack, Text } from "@shopify/polaris";
-import { useLoaderData } from "react-router";
+import {
+  Banner,
+  Page,
+  Layout,
+  Card,
+  BlockStack,
+  Button,
+  InlineStack,
+  Text,
+} from "@shopify/polaris";
+import { useEffect } from "react";
+import { useFetcher, useLoaderData, useRevalidator } from "react-router";
 import { authenticate } from "../shopify.server";
 import connectDataBase from "../lib/db.js";
 import InstalledShop from "../lib/store.js";
 import { ProcessedDay } from "../lib/processeddayschema.js";
 import DailyProductSale from "../lib/dailyproductsaleschema.js";
 import Dashboard from "../dashboard.jsx";
+import { runTopSellerSync } from "../lib/top-seller-sync.server.js";
+import { getOrders } from "./app.dailylast30daysproductsync.jsx";
 
 function formatSyncDateLabel(date) {
   if (!date) {
@@ -117,8 +129,60 @@ export const loader = async ({ request }) => {
   });
 };
 
+export const action = async ({ request }) => {
+  await connectDataBase();
+
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+  const { admin, session } = await authenticate.admin(request);
+  const shop = session.shop;
+
+  if (intent === "run-daily-sync") {
+    const result = await runTopSellerSync({ admin, shop });
+
+    return json({
+      ok: true,
+      intent,
+      message: `Daily sync completed for ${result.date}. Orders: ${result.orderCount}, products updated: ${result.updatedProductsCount}.`,
+    });
+  }
+
+  if (intent === "run-last30-sync") {
+    const allOrders = await getOrders({ admin });
+
+    return json({
+      ok: true,
+      intent,
+      message: `Last 30 days sync completed. Orders processed: ${allOrders.length}.`,
+    });
+  }
+
+  return json(
+    {
+      ok: false,
+      message: "Unknown sync action.",
+    },
+    { status: 400 },
+  );
+};
+
 export default function Index() {
   const { kpis, availableDates, tableProducts, defaultFilterDate } = useLoaderData();
+  const dailySyncFetcher = useFetcher();
+  const last30SyncFetcher = useFetcher();
+  const revalidator = useRevalidator();
+
+  useEffect(() => {
+    if (dailySyncFetcher.state === "idle" && dailySyncFetcher.data?.ok) {
+      revalidator.revalidate();
+    }
+  }, [dailySyncFetcher.data, dailySyncFetcher.state, revalidator]);
+
+  useEffect(() => {
+    if (last30SyncFetcher.state === "idle" && last30SyncFetcher.data?.ok) {
+      revalidator.revalidate();
+    }
+  }, [last30SyncFetcher.data, last30SyncFetcher.state, revalidator]);
 
   return (
     <Page>
@@ -133,12 +197,41 @@ export default function Index() {
                 Open the Blocks Guide to choose the right best-seller block, pick a theme, and go
                 directly to the Shopify customizer for home or collection pages.
               </Text>
-              <InlineStack gap="200">
+              <InlineStack gap="200" wrap>
                 <Button variant="primary" url="/app/blocks-guide">
                   Open Blocks Guide
                 </Button>
-                <Button url="/app/dailylast30daysproductsync">Run sync</Button>
+                <dailySyncFetcher.Form method="post">
+                  <input type="hidden" name="intent" value="run-daily-sync" />
+                  <Button
+                    submit
+                    loading={dailySyncFetcher.state !== "idle"}
+                  >
+                    Run daily sync
+                  </Button>
+                </dailySyncFetcher.Form>
+                <last30SyncFetcher.Form method="post">
+                  <input type="hidden" name="intent" value="run-last30-sync" />
+                  <Button
+                    submit
+                    loading={last30SyncFetcher.state !== "idle"}
+                  >
+                    Run last 30 days sync
+                  </Button>
+                </last30SyncFetcher.Form>
+                <Button url="/app/topselling">Open daily sync page</Button>
+                <Button url="/app/dailylast30daysproductsync">Open last 30 days page</Button>
               </InlineStack>
+              {dailySyncFetcher.data?.message ? (
+                <Banner tone={dailySyncFetcher.data.ok ? "success" : "critical"}>
+                  <p>{dailySyncFetcher.data.message}</p>
+                </Banner>
+              ) : null}
+              {last30SyncFetcher.data?.message ? (
+                <Banner tone={last30SyncFetcher.data.ok ? "success" : "critical"}>
+                  <p>{last30SyncFetcher.data.message}</p>
+                </Banner>
+              ) : null}
             </BlockStack>
           </Card>
         </Layout.Section>

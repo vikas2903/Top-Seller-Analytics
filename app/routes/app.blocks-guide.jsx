@@ -16,11 +16,13 @@ import {
   Select,
   Text,
 } from "@shopify/polaris";
-import { useMemo, useState } from "react";
-import { useLoaderData } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useFetcher, useLoaderData, useRevalidator } from "react-router";
 import { ProcessedDay } from "../lib/processeddayschema.js";
 import connectDataBase from "../lib/db.js";
 import { authenticate } from "../shopify.server";
+import { runTopSellerSync } from "../lib/top-seller-sync.server.js";
+import { getOrders } from "./app.dailylast30daysproductsync.jsx";
 
 const BLOCKS = [
   {
@@ -166,6 +168,43 @@ export const loader = async ({ request }) => {
   });
 };
 
+export const action = async ({ request }) => {
+  await connectDataBase();
+
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+  const { admin, session } = await authenticate.admin(request);
+  const shop = session.shop;
+
+  if (intent === "run-daily-sync") {
+    const result = await runTopSellerSync({ admin, shop });
+
+    return json({
+      ok: true,
+      intent,
+      message: `Daily sync completed for ${result.date}. Orders: ${result.orderCount}, products updated: ${result.updatedProductsCount}.`,
+    });
+  }
+
+  if (intent === "run-last30-sync") {
+    const allOrders = await getOrders({ admin });
+
+    return json({
+      ok: true,
+      intent,
+      message: `Last 30 days sync completed. Orders processed: ${allOrders.length}.`,
+    });
+  }
+
+  return json(
+    {
+      ok: false,
+      message: "Unknown sync action.",
+    },
+    { status: 400 },
+  );
+};
+
 function BlockPreview({ accent, eyebrow, location }) {
   return (
     <div
@@ -250,9 +289,24 @@ function BlockPreview({ accent, eyebrow, location }) {
 export default function BlocksGuidePage() {
   const { apiKey, normalizedShop, latestProcessedDay, themes } = useLoaderData();
   const [selectedThemeId, setSelectedThemeId] = useState(themes[0]?.numericId || "");
+  const dailySyncFetcher = useFetcher();
+  const last30SyncFetcher = useFetcher();
+  const revalidator = useRevalidator();
 
   const selectedTheme = themes.find((theme) => theme.numericId === selectedThemeId) || themes[0] || null;
   const hasSyncData = Boolean(latestProcessedDay?.processedAt);
+
+  useEffect(() => {
+    if (dailySyncFetcher.state === "idle" && dailySyncFetcher.data?.ok) {
+      revalidator.revalidate();
+    }
+  }, [dailySyncFetcher.data, dailySyncFetcher.state, revalidator]);
+
+  useEffect(() => {
+    if (last30SyncFetcher.state === "idle" && last30SyncFetcher.data?.ok) {
+      revalidator.revalidate();
+    }
+  }, [last30SyncFetcher.data, last30SyncFetcher.state, revalidator]);
 
   const themeOptions = useMemo(
     () =>
@@ -273,10 +327,6 @@ export default function BlocksGuidePage() {
     <Page
       title="Blocks guide"
       subtitle="Install the right best-seller block on the right storefront page with less guesswork."
-      primaryAction={{
-        content: "Run last 30 days sync",
-        url: "/app/dailylast30daysproductsync",
-      }}
       secondaryActions={[
         {
           content: "Open dashboard",
@@ -301,6 +351,44 @@ export default function BlocksGuidePage() {
               </p>
             </Banner>
           )}
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">
+                Run sync from here
+              </Text>
+              <Text as="p" tone="subdued">
+                Use these buttons to refresh your daily top sellers and last 30 days collection data
+                without leaving this page.
+              </Text>
+              <InlineStack gap="200" wrap>
+                <dailySyncFetcher.Form method="post">
+                  <input type="hidden" name="intent" value="run-daily-sync" />
+                  <Button submit loading={dailySyncFetcher.state !== "idle"}>
+                    Run daily sync
+                  </Button>
+                </dailySyncFetcher.Form>
+                <last30SyncFetcher.Form method="post">
+                  <input type="hidden" name="intent" value="run-last30-sync" />
+                  <Button submit loading={last30SyncFetcher.state !== "idle"} variant="primary">
+                    Run last 30 days sync
+                  </Button>
+                </last30SyncFetcher.Form>
+              </InlineStack>
+              {dailySyncFetcher.data?.message ? (
+                <Banner tone={dailySyncFetcher.data.ok ? "success" : "critical"}>
+                  <p>{dailySyncFetcher.data.message}</p>
+                </Banner>
+              ) : null}
+              {last30SyncFetcher.data?.message ? (
+                <Banner tone={last30SyncFetcher.data.ok ? "success" : "critical"}>
+                  <p>{last30SyncFetcher.data.message}</p>
+                </Banner>
+              ) : null}
+            </BlockStack>
+          </Card>
         </Layout.Section>
 
         <Layout.Section>
