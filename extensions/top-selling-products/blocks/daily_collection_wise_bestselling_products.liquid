@@ -6,19 +6,59 @@
 >
 
 {{ 'daywise.css' | asset_url | stylesheet_tag }}
+<style>
+ .lux-section{
+  background: {{ block.settings.background }};
+  }
+
+  .lux-section--collection-wise .lux-track-outer {
+    padding: 12px 10px 0;
+  }
+
+  .lux-section--collection-wise .lux-track {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .lux-section--collection-wise .lux-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: initial;
+    scroll-snap-align: unset;
+  }
+
+  .lux-section--collection-wise .lux-arrow,
+  .lux-section--collection-wise .lux-dots {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .lux-section--collection-wise .lux-track {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+  }
+</style>
 
 <section id="lux-section-{{ section.id }}" class="lux-section lux-section--collection-wise">
-  <div class="lux-heading-wrap">
-    <p class="lux-eyebrow">{{ block.settings.subheading | default: 'COLLECTION BEST SELLERS' }}</p>
-    <h2 class="lux-title">{{ block.settings.heading | default: collection.title }}</h2>
-    <div class="lux-divider">
-      <span></span>
-      <svg viewBox="0 0 24 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 5L0 5M12 5L24 5M12 5C12 5 10 1 8 5C6 9 4 5 4 5M12 5C12 5 14 1 16 5C18 9 20 5 20 5" stroke="currentColor" stroke-width="0.8"/>
-      </svg>
-      <span></span>
+  
+  {% unless block.settings.hide_headings %}
+    <div class="lux-heading-wrap">
+      <p class="lux-eyebrow">{{ block.settings.subheading }}</p>
+      <h2 class="lux-title">{{ block.settings.heading }}</h2>
+      <div class="lux-divider">
+        <span></span> 
+        <svg viewBox="0 0 24 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 5L0 5M12 5L24 5M12 5C12 5 10 1 8 5C6 9 4 5 4 5M12 5C12 5 14 1 16 5C18 9 20 5 20 5" stroke="currentColor" stroke-width="0.8"/>
+        </svg>
+        <span></span>
+      </div>
     </div>
-  </div>
+  {% endunless %} 
 
   <div class="lux-track-outer">
     <div class="lux-track" id="luxTrack">
@@ -49,8 +89,8 @@
           {%- endif -%}
 
           {%- unless should_hide_product -%}
-            <article class="lux-card">
-              <div class="lux-img-wrap">
+            <article class="lux-card " style="box-shadow: none;">
+              <div class="lux-img-wrap"> 
                 {%- if matched_product.featured_image -%}
                   <img
                     src="{{ matched_product.featured_image | image_url: width: 900 }}"
@@ -85,6 +125,7 @@
 
                   <h3 class="lux-prod-title">{{ matched_product.title }}</h3>
 
+              {% unless block.settings.hide_variants %}
                   {% for option in matched_product.options_with_values %}
                     {% assign opt_lower = option.name | downcase %}
                     {% if opt_lower == 'size' %}
@@ -135,6 +176,8 @@
                       </div>
                     {% endif %}
                   {% endfor %}
+              {% endunless %}
+
                 </div>
 
                 <div class="lux-info-bottom">
@@ -169,19 +212,7 @@
       {%- endif -%}
     </div>
 
-    <button class="lux-arrow lux-arrow--prev" id="luxPrev" aria-label="Previous">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <button class="lux-arrow lux-arrow--next" id="luxNext" aria-label="Next">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
   </div>
-
-  <div class="lux-dots" id="luxDots"></div>
 </section>
 
 <div class="qv-backdrop" id="qvBackdrop" aria-hidden="true"></div>
@@ -254,9 +285,27 @@
     {
       "type": "text",
       "label": "Sub Heading",
-      "id": "subheading",
-      "default": "COLLECTION BEST SELLERS"
+      "id": "subheading"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_variants",
+      "label": "Hide variants",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_headings",
+      "label": "Hide Headings",
+      "default": false
+    },
+    {
+      "type": "color_background", 
+      "id": "background",
+      "label": "Background",
+      "default": "#f7f4ef"
     }
+
   ]
 }
 {% endschema %}

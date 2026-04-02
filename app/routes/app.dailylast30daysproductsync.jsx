@@ -124,11 +124,11 @@ const buildCollectionSalesMap = async (orders, admin) => {
     }
   }
 
-  await getTop10PerCollection(collectionMap, admin);
+  await getTopProductsPerCollection(collectionMap, admin);
   return collectionMap;
 };
 
-const getTop10PerCollection = async (collectionMap, admin) => {
+const getTopProductsPerCollection = async (collectionMap, admin) => {
   const result = {};
 
   for (const [collectionId, data] of Object.entries(collectionMap)) {
@@ -136,7 +136,7 @@ const getTop10PerCollection = async (collectionMap, admin) => {
       .sort((firstProduct, secondProduct) => {
         return secondProduct.totalQuantity - firstProduct.totalQuantity;
       })
-      .slice(0, 10);
+      .slice(0, 40);
 
     result[collectionId] = {
       collectionTitle: data.title,
@@ -144,7 +144,7 @@ const getTop10PerCollection = async (collectionMap, admin) => {
     };
   }
 
-  console.log("Top 10 Products Per Collection:", result);
+  console.log("Top 40 Products Per Collection:", result);
 
   await saveAllCollections(result, admin);
   return result;
@@ -255,10 +255,10 @@ const saveToCollectionMetafield = async (collectionId, topProducts, admin) => {
   return verifiedMetafield;
 };
 
-const saveAllCollections = async (top10PerCollection, admin) => {
+const saveAllCollections = async (topProductsPerCollection, admin) => {
   const saveResults = [];
 
-  for (const [collectionId, data] of Object.entries(top10PerCollection)) {
+  for (const [collectionId, data] of Object.entries(topProductsPerCollection)) {
     const verifiedMetafield = await saveToCollectionMetafield(
       collectionId,
       data.topProducts,

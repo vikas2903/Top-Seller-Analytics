@@ -57,18 +57,22 @@ function formatMoney(cents) {
 
     var cards = Array.from(track.querySelectorAll('.lux-card'));
     var total = cards.length;
+    var sliderEnabled = !!dotsEl;
 
-    cards.forEach(function (_, i) {
-      var d = document.createElement('button');
-      d.className = 'lux-dot' + (i === 0 ? ' active' : '');
-      d.setAttribute('aria-label', 'Card ' + (i + 1));
-      d.addEventListener('click', function () {
-        scrollToCard(i);
+    if (sliderEnabled) {
+      cards.forEach(function (_, i) {
+        var d = document.createElement('button');
+        d.className = 'lux-dot' + (i === 0 ? ' active' : '');
+        d.setAttribute('aria-label', 'Card ' + (i + 1));
+        d.addEventListener('click', function () {
+          scrollToCard(i);
+        });
+        dotsEl.appendChild(d);
       });
-      dotsEl.appendChild(d);
-    });
+    }
 
     function updateDots(idx) {
+      if (!dotsEl) return;
       Array.from(dotsEl.querySelectorAll('.lux-dot')).forEach(function (d, i) {
         d.classList.toggle('active', i === idx);
       });
@@ -92,28 +96,32 @@ function formatMoney(cents) {
       });
       return closest;
     }
-    btnNext &&
+    sliderEnabled &&
+      btnNext &&
       btnNext.addEventListener('click', function () {
         scrollToCard(Math.min(getVisibleIndex() + 1, total - 1));
       });
-    btnPrev &&
+    sliderEnabled &&
+      btnPrev &&
       btnPrev.addEventListener('click', function () {
         scrollToCard(Math.max(getVisibleIndex() - 1, 0));
       });
     var ticking = false;
-    track.addEventListener(
-      'scroll',
-      function () {
-        if (!ticking) {
-          requestAnimationFrame(function () {
-            updateDots(getVisibleIndex());
-            ticking = false;
-          });
-          ticking = true;
-        }
-      },
-      { passive: true }
-    );
+    if (sliderEnabled) {
+      track.addEventListener(
+        'scroll',
+        function () {
+          if (!ticking) {
+            requestAnimationFrame(function () {
+              updateDots(getVisibleIndex());
+              ticking = false;
+            });
+            ticking = true;
+          }
+        },
+        { passive: true }
+      );
+    }
 
     /* ─────────────────────────────────
      PER-CARD: QTY + VARIANTS + PRICE
@@ -243,6 +251,14 @@ function updateCardPrice() {
     var qvImgCounter = document.getElementById('qvImgCounter');
 
     var qvState = { variants: [], selected: [], images: [], optionNames: [], currentImgIdx: 0 };
+
+    // Move modal elements to <body> so fixed positioning is not constrained by app block containers.
+    if (backdrop && backdrop.parentNode !== document.body) {
+      document.body.appendChild(backdrop);
+    }
+    if (modal && modal.parentNode !== document.body) {
+      document.body.appendChild(modal);
+    }
 
     /* Image slider */
     function showQVImage(idx) {
