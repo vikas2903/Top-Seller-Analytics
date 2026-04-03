@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
 :root {
-    --lux-bg: #f7f4ef;
+    --lux-bg: #f5f5f54d;
     --lux-surface: #ffffff;
     --lux-border: rgba(178, 175, 170, 0.22);
     --lux-gold: rgb(0, 0, 0);
@@ -170,7 +170,24 @@
     object-fit: cover;
     display: block;
     object-position: top;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lux-img-slider {
+    position: relative;
+    display: flex;
+    width: 100%;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+}
+
+.lux-img-slide {
+    flex: 0 0 100%;
+    min-width: 100%;
+    position: relative;
+}
+
+.lux-img-slide .lux-img {
+    transition: none;
 }
 
 .lux-img-overlay {
@@ -178,6 +195,48 @@
     inset: 0;
     background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
     pointer-events: none;
+}
+
+.lux-card-media-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 3;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    padding: 0;
+    box-shadow: none;
+}
+
+.lux-card-media-arrow:hover {
+    opacity: 0.85;
+}
+
+.lux-card-media-arrow:disabled {
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+.lux-card-media-arrow--prev {
+    left: 10px;
+}
+
+.lux-card-media-arrow--next {
+    right: 10px;
+}
+
+.lux-card-media-arrow svg {
+    width: 18px;
+    height: 18px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
 
 /* ── Info Block ── */
@@ -873,6 +932,7 @@
     display: block;
     border-radius: 4px;
     transition: opacity 0.22s;
+    object-position: top;
 }
 
 /* ── QV Image Slider Arrows ── */
@@ -1141,6 +1201,11 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
+    .lux-section--collection-wise .lux-track-outer {padding: 0;}
+    .lux-section--collection-wise .lux-price {font-size: 16px;}
+    .lux-section--collection-wise .lux-qty-btn { width: 22px;}
+    .lux-section--collection-wise .lux-qty-input {width: 30px;}
+    .lux-section--collection-wise .top_seller_badge {top: -52px;}
     /* Mobile: modal already positioned by transform, backdrop needs different transition */
 }
 

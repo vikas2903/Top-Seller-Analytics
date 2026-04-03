@@ -219,8 +219,8 @@ export default function Index() {
                     Run last 30 days sync
                   </Button>
                 </last30SyncFetcher.Form>
-                <Button url="/app/topselling">Open daily sync page</Button>
-                <Button url="/app/dailylast30daysproductsync">Open last 30 days page</Button>
+                {/* <Button url="/app/topselling">Open daily sync page</Button>
+                <Button url="/app/dailylast30daysproductsync">Open last 30 days page</Button> */}
               </InlineStack>
               {dailySyncFetcher.data?.message ? (
                 <Banner tone={dailySyncFetcher.data.ok ? "success" : "critical"}>

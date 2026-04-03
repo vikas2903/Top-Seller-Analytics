@@ -188,15 +188,9 @@
       </p> {% endcomment %}
 
     {%- else -%}
-      {%- comment %} Fallback: show from collection if no metafield data yet {%- endcomment %}
-      {% assign products = collections[section.settings.collection].products %}
-
-      {% for product in products %}
-        <article class="lux-card">
-          <!-- Your original fallback card code here -->
-          <!-- ... paste your existing card structure for fallback ... -->
-        </article>
-      {% endfor %}
+      <div style="width: 100%; text-align: center; padding: 24px 16px; color: #777;">
+        No last 7 days product data available yet.
+      </div>
     {%- endif -%}
   </div>
 

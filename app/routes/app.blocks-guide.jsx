@@ -524,17 +524,18 @@ export default function BlocksGuidePage() {
                   <List.Item>Use the 24-hour block when you want a fast-moving, fresh homepage story.</List.Item>
                   <List.Item>Use the collection block when relevance matters more than global popularity.</List.Item>
                 </List>
-                <InlineStack gap="200">
+                {/* <InlineStack gap="200">
                   <Button url="/app/dailylast30daysproductsync">Open sync page</Button>
                   <Button url="/app" variant="plain">
                     Back to dashboard
                   </Button>
-                </InlineStack>
+                </InlineStack> */}
               </BlockStack>
             </Card>
           </InlineGrid>
         </Layout.Section>
       </Layout>
+      <br />
     </Page>
   );
 }

@@ -28,7 +28,14 @@ function formatMoney(cents) {
       if (typeof imgObj === 'string') {
         raw = imgObj;
       } else {
-        raw = imgObj.src || imgObj.url || '';
+        raw =
+          imgObj.src ||
+          imgObj.url ||
+          imgObj.originalSrc ||
+          imgObj.transformedSrc ||
+          (imgObj.preview_image && imgObj.preview_image.src) ||
+          (imgObj.featured_image && imgObj.featured_image.src) ||
+          '';
       }
       if (!raw) return raw;
       // Strip existing size suffix (e.g. _1024x1024, _large, _medium, etc.)
@@ -44,6 +51,39 @@ function formatMoney(cents) {
         raw = raw.replace(/(\.\w{2,5})(\?.*)?$/, '_medium$1$2');
       }
       return raw;
+    }
+
+    function normalizeImages(images) {
+      var list = Array.isArray(images) ? images : [];
+      var seen = {};
+
+      return list
+        .map(function (img) {
+          if (!img) return null;
+
+          var src = getImgSrc(img, 'large');
+          if (!src || seen[src]) return null;
+
+          seen[src] = true;
+
+          return {
+            src: src,
+            alt:
+              (typeof img === 'object' && (img.alt || img.altText || img.title)) ||
+              '',
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function createArrowSvg(direction) {
+      return (
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+        (direction === 'prev'
+          ? '<path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+          : '<path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>') +
+        '</svg>'
+      );
     }
 
     /* ─────────────────────────────────
@@ -129,6 +169,89 @@ function formatMoney(cents) {
     cards.forEach(function (card) {
       var infoEl = card.querySelector('.lux-info');
       if (!infoEl) return;
+      var wrap = card.querySelector('.lux-img-wrap');
+      var imageEl = card.querySelector('.lux-img');
+
+      // Card image slider
+      if (wrap && imageEl) {
+        var cardImages = [];
+        try {
+          cardImages = JSON.parse(infoEl.dataset.images || '[]');
+        } catch (e) {}
+
+        var validCardImages = normalizeImages(cardImages);
+
+        if (validCardImages.length > 1) {
+          var cardImgIndex = 0;
+          var originalImage = {
+            src: imageEl.src,
+            alt: imageEl.alt || infoEl.dataset.productTitle || '',
+          };
+          var sliderTrack = document.createElement('div');
+          sliderTrack.className = 'lux-img-slider';
+
+          [originalImage]
+            .concat(validCardImages.filter(function (img) {
+              return img.src !== originalImage.src;
+            }))
+            .forEach(function (imgObj) {
+              var slide = document.createElement('div');
+              slide.className = 'lux-img-slide';
+
+              var slideImg = document.createElement('img');
+              slideImg.className = 'lux-img';
+              slideImg.src = imgObj.src;
+              slideImg.alt = imgObj.alt || infoEl.dataset.productTitle || '';
+              slideImg.loading = 'lazy';
+              slideImg.width = imageEl.width || 500;
+              slideImg.height = imageEl.height || 667;
+
+              slide.appendChild(slideImg);
+              sliderTrack.appendChild(slide);
+            });
+
+          imageEl.remove();
+          wrap.insertBefore(sliderTrack, wrap.firstChild);
+          validCardImages = Array.from(sliderTrack.querySelectorAll('.lux-img-slide img')).map(function (img) {
+            return {
+              src: img.src,
+              alt: img.alt || '',
+            };
+          });
+
+          var prevBtn = document.createElement('button');
+          prevBtn.type = 'button';
+          prevBtn.className = 'lux-card-media-arrow lux-card-media-arrow--prev';
+          prevBtn.setAttribute('aria-label', 'Previous image');
+          prevBtn.innerHTML = createArrowSvg('prev');
+
+          var nextBtn = document.createElement('button');
+          nextBtn.type = 'button';
+          nextBtn.className = 'lux-card-media-arrow lux-card-media-arrow--next';
+          nextBtn.setAttribute('aria-label', 'Next image');
+          nextBtn.innerHTML = createArrowSvg('next');
+
+          function renderCardImage(index) {
+            cardImgIndex = Math.max(0, Math.min(index, validCardImages.length - 1));
+            sliderTrack.style.transform = 'translateX(-' + cardImgIndex * 100 + '%)';
+
+            prevBtn.disabled = cardImgIndex === 0;
+            nextBtn.disabled = cardImgIndex >= validCardImages.length - 1;
+          }
+
+          prevBtn.addEventListener('click', function () {
+            renderCardImage(cardImgIndex - 1);
+          });
+
+          nextBtn.addEventListener('click', function () {
+            renderCardImage(cardImgIndex + 1);
+          });
+
+          wrap.appendChild(prevBtn);
+          wrap.appendChild(nextBtn);
+          renderCardImage(0);
+        }
+      }
 
       // Qty
       var minus = card.querySelector('[data-action="minus"]');
@@ -324,9 +447,7 @@ function updateCardPrice() {
       } catch (e) {}
 
       // Filter valid images
-      var validImgs = images.filter(function (img) {
-        return img && (img.src || img.url);
-      });
+      var validImgs = normalizeImages(images);
 
       qvState = {
         variants: variants,
@@ -359,7 +480,7 @@ function updateCardPrice() {
           var tb = document.createElement('div');
           tb.className = 'qv-thumb' + (i === 0 ? ' active' : '');
           var im = document.createElement('img');
-          im.src = getImgSrc(img, 'medium') || getImgSrc(img, 'large');
+          im.src = img.src || getImgSrc(img, 'medium') || getImgSrc(img, 'large');
           im.alt = img.alt || '';
           im.loading = 'lazy';
           tb.appendChild(im);
