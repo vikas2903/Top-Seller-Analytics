@@ -1,12 +1,12 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "57cba50f7828bfbeb1800e8062e1b437"
-name = "TopSelling Products"
-application_url = "https://top-seller-analytics.vercel.app/"
+name = "Top Selling Products"
+application_url = "https://top-seller-analytics.vercel.app"
 embedded = true
 
 [build] 
-automatically_update_urls_on_dev = true
+automatically_update_urls_on_dev = false
 
 [webhooks]
 api_version = "2026-04"
@@ -29,9 +29,9 @@ scopes = "read_discounts,read_orders,read_themes,write_metaobject_definitions,wr
 
 
 [auth]
-redirect_urls = [ "https://top-seller-analytics.vercel.app/api/auth" ]
+redirect_urls = [ "https://top-seller-analytics.vercel.app/auth/callback" ]
 
-[product.metafields.app.demo_info]
+[product.metafields.app.demo_info] 
 type = "single_line_text_field"
 name = "Demo Source Info"
 description = "Tracks products created by the Shopify app template for development"
