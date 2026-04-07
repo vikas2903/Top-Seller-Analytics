@@ -21,6 +21,7 @@ export default function App() {
         <s-link href="/app/help">Help</s-link>
         {/* <s-link href="/app/products">Products</s-link>
         <s-link href="/app/dailylast30daysproductsync">Last 30 Days Orders Sync</s-link> */}
+        {/* <s-link href="/app/ai-productds-recommandation">AI Product Recommandation</s-link> */}
       </s-app-nav>
       <Outlet />
     </AppProvider>
