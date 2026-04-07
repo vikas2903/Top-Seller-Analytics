@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
             setTimeout(() => {
                 const botMessage = `
                 <div class="message bot-message">
-                    <div class="avatar">ðŸ¤–</div>
+                    <div class="avatar">😊</div>
                     <div class="message-bubble">
                         <div class="message-content"><p>${botText}</p></div>
                     </div>
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const errorMessage = `
                 <div class="message bot-message">
-                    <div class="avatar">ðŸ¤–</div>
+                    <div class="avatar">🤖</div>
                     <div class="message-bubble">
                         <div class="message-content"><p>Something went wrong. Please try again.</p></div>
                     </div>

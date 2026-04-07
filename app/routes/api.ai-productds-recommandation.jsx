@@ -1,7 +1,6 @@
 import Groq from "groq-sdk";
 import dotenv from "dotenv";
 import { json } from "@remix-run/node";
-import { unauthenticated } from "../shopify.server.js";
 
 dotenv.config();
 
@@ -22,8 +21,6 @@ export const loader = async ({ request }) => {
         },
       );
     }
-
-    await unauthenticated.admin(requestedShop);
 
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,
