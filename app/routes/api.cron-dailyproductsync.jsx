@@ -12,6 +12,8 @@ function readSecret(request) {
   return (
     request.headers.get("x-cron-secret") ||
     request.headers.get("X-Cron-Secret") ||
+    request.headers.get("x-secret-code") ||
+    request.headers.get("X-Secret-Code") ||
     url.searchParams.get("secret")
   );
 }

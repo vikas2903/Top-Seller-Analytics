@@ -3,6 +3,49 @@ import connectDataBase from "../lib/db.js";
 import { ProcessedDay } from "../lib/processeddayschema.js";
 import DailyProductSale from "../lib/dailyproductsaleschema.js";
 
+function extractGraphqlErrorMessage(errors) {
+  if (!errors) {
+    return null;
+  }
+
+  if (Array.isArray(errors)) {
+    return errors
+      .map((error) => error?.message || JSON.stringify(error))
+      .join(", ");
+  }
+
+  if (typeof errors === "string") {
+    return errors;
+  }
+
+  if (typeof errors === "object") {
+    if (typeof errors.message === "string") {
+      return errors.message;
+    }
+
+    return JSON.stringify(errors);
+  }
+
+  return String(errors);
+}
+
+async function parseAdminGraphqlResponse(response, contextLabel) {
+  let responseJson;
+
+  try {
+    responseJson = await response.json();
+  } catch (error) {
+    throw new Error(`${contextLabel}: invalid JSON response from Shopify`);
+  }
+
+  const errorMessage = extractGraphqlErrorMessage(responseJson?.errors);
+  if (errorMessage) {
+    throw new Error(`${contextLabel}: ${errorMessage}`);
+  }
+
+  return responseJson;
+}
+
 function shouldSkipProduct({ title, price }) {
   const normalizedTitle = String(title || "").toLowerCase();
   const normalizedPrice = Number(price) || 0;
@@ -25,11 +68,10 @@ async function getShopGid(admin) {
   `;
 
   const shopResponse = await admin.graphql(shopQuery);
-  const shopResult = await shopResponse.json();
-
-  if (shopResult.errors?.length) {
-    throw new Error(shopResult.errors.map((error) => error.message).join(", "));
-  }
+  const shopResult = await parseAdminGraphqlResponse(
+    shopResponse,
+    "Shop query failed",
+  );
 
   return shopResult.data.shop.id;
 }
@@ -100,13 +142,10 @@ async function updateTopSellerMetafields({
     variables: { metafields },
   });
 
-  const metafieldResult = await metafieldResponse.json();
-
-  if (metafieldResult.errors?.length) {
-    throw new Error(
-      metafieldResult.errors.map((error) => error.message).join(", ")
-    );
-  }
+  const metafieldResult = await parseAdminGraphqlResponse(
+    metafieldResponse,
+    "Metafield update failed",
+  );
 
   if (metafieldResult?.data?.metafieldsSet?.userErrors?.length) {
     throw new Error(
@@ -179,10 +218,10 @@ export async function runTopSellerSync({ admin, shop }) {
       variables: { query: QUERY_STR, after: cursor },
     });
 
-    const result = await response.json();
-    if (result.errors?.length) {
-      throw new Error(result.errors.map((error) => error.message).join(", "));
-    }
+    const result = await parseAdminGraphqlResponse(
+      response,
+      `Orders query failed for ${shop}`,
+    );
 
     if (!result?.data?.orders) {
       throw new Error("Shopify orders query returned no data");

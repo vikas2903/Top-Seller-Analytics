@@ -61,6 +61,8 @@
   {% endunless %} 
 
   <div class="lux-track-outer">
+
+
     <div class="lux-track" id="luxTrack">
       {%- assign top_data = collection.metafields.top_sellers_collection_wise.top_products_collection_wise.value | parse_json -%}
 
@@ -206,11 +208,15 @@
           {%- endunless -%}
         {%- endfor -%}
       {%- else -%}
-        <div style="width: 100%; text-align: center; padding: 24px 16px; color: #777;">
-          No collection metafield product data available yet.
-        </div>
+        
       {%- endif -%}
     </div>
+
+    {%- if top_data.products == blank or top_data.products.size == 0 -%}
+      <div style="width: 100%; text-align: center; padding: 24px 16px; color: #777;">
+        No collection metafield product data available yet.
+      </div>
+    {%- endif -%}
 
   </div>
 </section>
