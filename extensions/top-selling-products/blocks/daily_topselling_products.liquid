@@ -6,8 +6,22 @@
 >
 
 {{ 'daywise.css' | asset_url | stylesheet_tag }}
+<style>
+  #lux-section-{{ section.id }} .qv-backdrop,
+  #lux-section-{{ section.id }} .qv-modal {
+    display: none;
+  }
 
-<section id="lux-section-{{ section.id }}" class="lux-section lux-section--previous-day">
+  .qv-backdrop.open {
+    display: block;
+  }
+
+  .qv-modal.open {
+    display: flex;
+  }
+</style>
+
+<section id="lux-section-{{ section.id }}" class="lux-section lux-section--previous-day" data-lux-root>
   <div class="lux-heading-wrap">
     <p class="lux-eyebrow">{{ block.settings.subheading | default: 'PREVIOUS 24 HOURS' }}</p>
     <h2 class="lux-title">{{ block.settings.heading | default: 'Daily Top Selling Products' }}</h2>
@@ -21,7 +35,7 @@
   </div>
 
   <div class="lux-track-outer">
-    <div class="lux-track" id="luxTrack">
+    <div class="lux-track">
       {%- assign top_data = shop.metafields.top_seller.previousday.value | parse_json -%}
 
       {%- if top_data.products.size > 0 -%}
@@ -40,8 +54,6 @@
 
           {%- unless should_hide_product -%}
             <article class="lux-card">
-              
-
               <div class="lux-img-wrap">
                 {%- if top.imageUrl -%}
                   <img
@@ -73,8 +85,7 @@
                 data-option-names="{{ option_names_str }}"
               >
                 <div class="lux-info-top">
-                
-                <p class="top_seller_badge"> <span class="pulse-dot" style="display: block;"></span> {{top.soldQty}} Sold in the last 7 days</p>
+                  <p class="top_seller_badge"><span class="pulse-dot" style="display: block;"></span> {{ top.soldQty }} Sold in the last 24 hours</p>
 
                   <h3 class="lux-prod-title">{{ top.title }}</h3>
 
@@ -162,74 +173,74 @@
       {%- endif -%}
     </div>
 
-    <button class="lux-arrow lux-arrow--prev" id="luxPrev" aria-label="Previous">
+    <button class="lux-arrow lux-arrow--prev" aria-label="Previous">
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
-    <button class="lux-arrow lux-arrow--next" id="luxNext" aria-label="Next">
+    <button class="lux-arrow lux-arrow--next" aria-label="Next">
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
   </div>
 
-  <div class="lux-dots" id="luxDots"></div>
-</section>
+  <div class="lux-dots"></div>
 
-<div class="qv-backdrop" id="qvBackdrop" aria-hidden="true"></div>
-<div class="qv-modal" id="qvModal" role="dialog" aria-modal="true" aria-label="Quick View">
-  <button class="qv-close" id="qvClose" aria-label="Close">
-    <svg viewBox="0 0 24 24" fill="none">
-      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-  </button>
+  <div class="qv-backdrop" aria-hidden="true"></div>
+  <div class="qv-modal" role="dialog" aria-modal="true" aria-label="Quick View">
+    <button class="qv-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
 
-  <div class="qv-body">
-    <div class="qv-gallery">
-      <div class="qv-main-img-wrap">
-        <img src="" alt="" class="qv-main-img" id="qvMainImg">
-        <button class="qv-img-arrow qv-img-prev" id="qvImgPrev" aria-label="Previous image">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <button class="qv-img-arrow qv-img-next" id="qvImgNext" aria-label="Next image">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <div class="qv-img-counter" id="qvImgCounter"></div>
-      </div>
-      <div class="qv-thumbs" id="qvThumbs"></div>
-    </div>
-
-    <div class="qv-info">
-      <p class="qv-eyebrow">Quick View</p>
-      <h2 class="qv-title" id="qvTitle"></h2>
-
-      <div class="qv-price-row">
-        <span class="qv-price" id="qvPrice"></span>
-        <span class="qv-compare" id="qvCompare"></span>
-      </div>
-
-      <div class="qv-variants" id="qvVariants"></div>
-
-      <div class="qv-actions">
-        <div class="qv-qty">
-          <button type="button" class="qv-qty-btn" data-action="minus">−</button>
-          <input type="number" class="qv-qty-input" id="qvQty" value="1" min="1" readonly>
-          <button type="button" class="qv-qty-btn" data-action="plus">+</button>
+    <div class="qv-body">
+      <div class="qv-gallery">
+        <div class="qv-main-img-wrap">
+          <img src="" alt="" class="qv-main-img">
+          <button class="qv-img-arrow qv-img-prev" aria-label="Previous image">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="qv-img-arrow qv-img-next" aria-label="Next image">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="qv-img-counter"></div>
         </div>
-        <button type="button" class="qv-atc-btn" id="qvAtcBtn">
-          <span id="qvAtcText">Add to Cart</span>
-        </button>
+        <div class="qv-thumbs"></div>
       </div>
 
-      <p class="qv-link-wrap"><a class="qv-link" id="qvLink" href="#">View full details →</a></p>
+      <div class="qv-info">
+        <p class="qv-eyebrow">Quick View</p>
+        <h2 class="qv-title"></h2>
+
+        <div class="qv-price-row">
+          <span class="qv-price"></span>
+          <span class="qv-compare"></span>
+        </div>
+
+        <div class="qv-variants"></div>
+
+        <div class="qv-actions">
+          <div class="qv-qty">
+            <button type="button" class="qv-qty-btn" data-action="minus">−</button>
+            <input type="number" class="qv-qty-input" value="1" min="1" readonly>
+            <button type="button" class="qv-qty-btn" data-action="plus">+</button>
+          </div>
+          <button type="button" class="qv-atc-btn">
+            <span data-qv-atc-text>Add to Cart</span>
+          </button>
+        </div>
+
+        <p class="qv-link-wrap"><a class="qv-link" href="#">View full details →</a></p>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
 <script src="{{ 'daywise.js' | asset_url }}" defer="defer"></script>
 
