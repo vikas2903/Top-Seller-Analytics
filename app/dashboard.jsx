@@ -1,6 +1,4 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useState } from "react";
-import { useNavigation, useSubmit } from "react-router";
 import "./styles/app._index.css";
 
 function formatDateTime(value) {
@@ -33,33 +31,10 @@ function KpiCard({ title, value, detail }) {
 
 export default function Dashboard({
   kpis,
-  availableDates,
   tableProducts,
-  defaultFilterDate,
+  emptyStateMessage,
 }) {
-  const submit = useSubmit();
-  const navigation = useNavigation();
-  const [selectedDate, setSelectedDate] = useState(defaultFilterDate || "");
-
-  useEffect(() => {
-    setSelectedDate(defaultFilterDate || availableDates?.[0] || "");
-  }, [defaultFilterDate, availableDates]);
-
-  useEffect(() => {
-    if (!selectedDate || selectedDate === defaultFilterDate) {
-      return;
-    }
-
-    submit({ date: selectedDate }, { method: "get" });
-  }, [defaultFilterDate, selectedDate, submit]);
-
-  const dayOptions = availableDates || [];
-  const hasDayOptions = dayOptions.length > 0;
-  const displayDate = selectedDate || defaultFilterDate;
-  const isLoadingDate = navigation.state !== "idle";
-  const emptyMessage = displayDate
-    ? `No product data found in DB for ${displayDate}.`
-    : "No orders sync";
+  const emptyMessage = emptyStateMessage || "No synced product data found in Shopify metafields yet.";
 
   return (
     <div className="dashboard-shell">
@@ -91,53 +66,6 @@ export default function Dashboard({
           className="dashboard-card"
           style={{ marginTop: "14px", overflowX: "auto" }}
         >
-          {/* <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "14px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div className="summary-title">Products</div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <label
-                htmlFor="day-filter"
-                style={{ fontSize: "12px", fontWeight: 700, color: "#31557d" }}
-              >
-                Day filter
-              </label>
-
-              <select
-                id="day-filter"
-                value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                disabled={!hasDayOptions}
-                style={{
-                  border: "1px solid #d7e1ef",
-                  borderRadius: "6px",
-                  padding: "8px 10px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  color: "#294b74",
-                  background: "#fff",
-                }}
-              >
-                {hasDayOptions ? (
-                  dayOptions.map((date) => (
-                    <option key={date} value={date}>
-                      {date}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No orders sync</option>
-                )}
-              </select>
-            </div>
-          </div> */}
-
           <table
             style={{
               width: "100%",
@@ -220,7 +148,7 @@ export default function Dashboard({
                       color: "#7a8fa6",
                     }}
                   >
-                    {isLoadingDate ? `Loading product data for ${displayDate}...` : emptyMessage}
+                    {emptyMessage}
                   </td>
                 </tr>
               )}

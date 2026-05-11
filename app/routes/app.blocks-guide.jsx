@@ -18,10 +18,11 @@ import {
 } from "@shopify/polaris";
 import { useEffect, useMemo, useState } from "react";
 import { useFetcher, useLoaderData, useRevalidator } from "react-router";
-import { ProcessedDay } from "../lib/processeddayschema.js";
-import connectDataBase from "../lib/db.js";
 import { authenticate } from "../shopify.server";
-import { runTopSellerSync } from "../lib/top-seller-sync.server.js";
+import {
+  getTopSellerMetafieldsSnapshot,
+  runTopSellerSync,
+} from "../lib/top-seller-sync.server.js";
 import { getOrders } from "./app.dailylast30daysproductsync.jsx";
 
 const BLOCKS = [
@@ -116,10 +117,7 @@ function formatDateTime(value) {
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const normalizedShop = session.shop.replace(".myshopify.com", "");
-
-  await connectDataBase();
-
-  const [response, latestProcessedDay] = await Promise.all([
+  const [response, snapshot] = await Promise.all([
     admin.graphql(`
       query BlocksGuideThemes {
         themes(first: 50) {
@@ -131,7 +129,7 @@ export const loader = async ({ request }) => {
         }
       }
     `),
-    ProcessedDay.findOne({ shop: session.shop }).sort({ processedAt: -1 }).lean(),
+    getTopSellerMetafieldsSnapshot(admin),
   ]);
 
   const responseJson = await response.json();
@@ -156,12 +154,12 @@ export const loader = async ({ request }) => {
     // eslint-disable-next-line no-undef
     apiKey: process.env.SHOPIFY_API_KEY || "",
     normalizedShop,
-    latestProcessedDay: latestProcessedDay
+    latestProcessedDay: snapshot.syncSummary
       ? {
-          date: latestProcessedDay.date,
-          processedAt: latestProcessedDay.processedAt,
-          orderCount: latestProcessedDay.orderCount || 0,
-          recordsUpdated: latestProcessedDay.recordsUpdated || 0,
+          date: snapshot.syncSummary.date,
+          processedAt: snapshot.syncSummary.syncedAt,
+          orderCount: snapshot.syncSummary.orderCount || 0,
+          recordsUpdated: snapshot.syncSummary.productsUpdated || 0,
         }
       : null,
     themes,
@@ -169,8 +167,6 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  await connectDataBase();
-
   const formData = await request.formData();
   const intent = formData.get("intent");
   const { admin, session } = await authenticate.admin(request);

@@ -1,9 +1,9 @@
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server.js";
-import connectDataBase from "../lib/db.js";
-import { ProcessedDay } from "../lib/processeddayschema.js";
-import DailyProductSale from "../lib/dailyproductsaleschema.js";
-import { runTopSellerSync } from "../lib/top-seller-sync.server.js";
+import {
+  getTopSellerMetafieldsSnapshot,
+  runTopSellerSync,
+} from "../lib/top-seller-sync.server.js";
 import {
   IndexTable,
   LegacyCard,
@@ -18,53 +18,37 @@ function getYesterdayDateStr() {
   return new Date(Date.now() - 86400000).toISOString().split("T")[0];
 }
 
-async function loadSavedProducts(shop, date) {
-  return DailyProductSale.find({ shop, date })
-    .sort({ soldQty: -1, title: 1 })
-    .lean();
-}
-
 export const loader = async ({ request }) => {
-  await connectDataBase();
-
   const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
   const date = getYesterdayDateStr();
 
-  let processedDay = await ProcessedDay.findOne({ shop, date }).lean();
-
-  const needsSync =
-    !processedDay ||
-    processedDay.recordsUpdated <= 0;
-
+  let snapshot = await getTopSellerMetafieldsSnapshot(admin);
   let syncResult = null;
 
-  if (needsSync) {
+  if (snapshot.syncSummary?.date !== date) {
     syncResult = await runTopSellerSync({ admin, shop });
-    processedDay = await ProcessedDay.findOne({ shop, date }).lean();
+    snapshot = await getTopSellerMetafieldsSnapshot(admin);
   }
-
-  const savedProducts = await loadSavedProducts(shop, date);
 
   return Response.json({
     shop,
     date,
-    source: syncResult ? "sync-and-db" : "db",
-    processedDay,
+    source: syncResult ? "sync-and-metafield" : "metafield",
     syncResult,
-    savedProducts,
+    savedProducts: snapshot.previousday?.products || [],
   });
 };
 
 export default function TopSelling() {
   const data = useLoaderData();
   const rows = data.savedProducts.map((product, index) => ({
-    id: product._id?.toString?.() ?? `${product.productId}-${index}`,
+    id: product.productId ?? `${index}`,
     productId: product.productId,
     title: product.title || "Unknown Product",
     handle: product.handle || "-",
     soldQty: product.soldQty || 0,
-    date: product.date,
+    date: data.date,
   }));
 
   const resourceName = {
@@ -121,10 +105,6 @@ export default function TopSelling() {
               {rowMarkup}
             </IndexTable>
           </LegacyCard>
-
-          {/* <LegacyCard title="Sync Debug Data" sectioned>
-            <pre>{JSON.stringify(data, null, 2)}</pre>
-          </LegacyCard> */}
         </Layout.Section>
       </Layout>
     </Page>

@@ -15,10 +15,11 @@ import { useFetcher, useLoaderData, useRevalidator } from "react-router";
 import { authenticate } from "../shopify.server";
 import connectDataBase from "../lib/db.js";
 import InstalledShop from "../lib/store.js";
-import { ProcessedDay } from "../lib/processeddayschema.js";
-import DailyProductSale from "../lib/dailyproductsaleschema.js";
 import Dashboard from "../dashboard.jsx";
-import { runTopSellerSync } from "../lib/top-seller-sync.server.js";
+import {
+  getTopSellerMetafieldsSnapshot,
+  runTopSellerSync,
+} from "../lib/top-seller-sync.server.js";
 import { getOrders } from "./app.dailylast30daysproductsync.jsx";
 
 function formatSyncDateLabel(date) {
@@ -33,23 +34,10 @@ function formatSyncDateLabel(date) {
   });
 }
 
-function getRecentDateStrings(days = 7) {
-  return Array.from({ length: days }, (_, index) => {
-    const date = new Date(Date.now() - index * 86400000);
-    return date.toISOString().split("T")[0];
-  });
-}
-
-function isValidDateString(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shopName = session.shop;
   const accessToken = session.accessToken;
-  const url = new URL(request.url);
-  const requestedDate = url.searchParams.get("date");
 
   await connectDataBase();
 
@@ -64,68 +52,56 @@ export const loader = async ({ request }) => {
     { upsert: true, new: true },
   );
 
-  const latestProcessedDay = await ProcessedDay.findOne({ shop: shopName })
-    .sort({ processedAt: -1 })
-    .lean();
-
-  const recentDates = getRecentDateStrings();
-  const selectedDate =
-    isValidDateString(requestedDate) && requestedDate
-      ? requestedDate
-      : latestProcessedDay?.date || recentDates[0] || "";
-
-  const selectedDateProducts = selectedDate
-    ? await DailyProductSale.find({
-        shop: shopName,
-        date: selectedDate,
-      })
-        .sort({ soldQty: -1, lastUpdatedAt: -1, title: 1 })
-        .lean()
-    : [];
-
-  const topProduct = latestProcessedDay
-    ? await DailyProductSale.findOne({
-        shop: shopName,
-        date: latestProcessedDay.date,
-      })
-        .sort({ soldQty: -1, lastUpdatedAt: -1 })
-        .lean()
-    : null;
-
+  const snapshot = await getTopSellerMetafieldsSnapshot(admin);
+  const summary = snapshot.syncSummary || {};
+  const previousDayData = snapshot.previousday || {};
+  const previousDayProducts = previousDayData.products || summary.previousDayProducts || [];
   const normalizedShop = shopName.replace(".myshopify.com", "");
-  const availableDates = recentDates;
-  const tableProducts = selectedDateProducts.map((product) => ({
-    id: product._id?.toString?.() ?? product.productId,
+  const emptyStateMessage = !summary.syncedAt
+    ? "No sync has run yet."
+    : (summary.orderCount || 0) === 0
+      ? "Sync completed, but no orders were found in the last 24 hours."
+      : previousDayProducts.length === 0
+        ? "Sync completed, but all last-24-hours items were filtered out or unavailable."
+        : "";
+
+  const tableProducts = previousDayProducts.map((product) => ({
+    id: product.productId,
     imageUrl: product.imageUrl || null,
     title: product.title || "Unknown Product",
     soldQty: product.soldQty || 0,
-    date: product.date,
+    date: previousDayData.date || summary.date || "",
     productId: product.productId,
     handle: product.handle || null,
     productAdminUrl: `https://admin.shopify.com/store/${normalizedShop}/products/${product.productId}`,
   }));
 
   const kpis = {
-    topProductName: topProduct?.title || "No synced products",
-    topProductDetail: topProduct
-      ? `${topProduct.soldQty} units sold`
-      : "Run cron job to sync products",
-    totalOrdersProcessed: latestProcessedDay?.orderCount || 0,
-    lastSyncTime: latestProcessedDay?.processedAt || null,
-    metaFieldWriteDate: latestProcessedDay?.processedAt || null,
-    productsUpdatedInTheme: latestProcessedDay?.recordsUpdated || 0,
-    productsUpdatedDetail: latestProcessedDay
-      ? `Saved for ${formatSyncDateLabel(latestProcessedDay.date)}`
-      : "No MongoDB records found",
-    syncDateLabel: formatSyncDateLabel(latestProcessedDay?.date),
+    topProductName: summary.topProductName || previousDayProducts[0]?.title || "No synced products",
+    topProductDetail:
+      summary.topProductSoldQty || previousDayProducts[0]?.soldQty
+        ? `${summary.topProductSoldQty || previousDayProducts[0]?.soldQty} units sold`
+        : "Run sync to generate product data",
+    totalOrdersProcessed: summary.orderCount || 0,
+    lastSyncTime: summary.syncedAt || snapshot.metafieldUpdatedAt.syncSummary || null,
+    metaFieldWriteDate:
+      snapshot.metafieldUpdatedAt.syncSummary ||
+      snapshot.metafieldUpdatedAt.previousday ||
+      null,
+    productsUpdatedInTheme: summary.productsUpdated || previousDayProducts.length,
+    productsUpdatedDetail: summary.date
+      ? `Saved for ${formatSyncDateLabel(summary.date)}`
+      : "No metafield data found",
+    syncDateLabel: formatSyncDateLabel(summary.date),
   };
 
   return json({
     shopName,
     kpis,
-    availableDates,
+    availableDates: summary.date ? [summary.date] : [],
     tableProducts,
-    defaultFilterDate: selectedDate,
+    defaultFilterDate: summary.date || "",
+    emptyStateMessage,
   });
 };
 
@@ -137,13 +113,13 @@ export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
 
-  if (intent === "run-daily-sync") {
+  if (intent === "run-daily-sync" || intent === "run-resync") {
     const result = await runTopSellerSync({ admin, shop });
 
     return json({
       ok: true,
       intent,
-      message: `Daily sync completed for ${result.date}. Orders: ${result.orderCount}, products updated: ${result.updatedProductsCount}.`,
+      message: `Sync completed for ${result.date}. Orders: ${result.orderCount}, products updated: ${result.updatedProductsCount}.`,
     });
   }
 
@@ -167,7 +143,7 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { kpis, availableDates, tableProducts, defaultFilterDate } = useLoaderData();
+  const { kpis, availableDates, tableProducts, defaultFilterDate, emptyStateMessage } = useLoaderData();
   const dailySyncFetcher = useFetcher();
   const last30SyncFetcher = useFetcher();
   const revalidator = useRevalidator();
@@ -194,33 +170,25 @@ export default function Index() {
                 Next step for merchants
               </Text>
               <Text as="p" tone="subdued">
-                Open the Blocks Guide to choose the right best-seller block, pick a theme, and go
-                directly to the Shopify customizer for home or collection pages.
+                Your daily sync now writes directly to Shopify metafields, so the storefront can
+                update automatically from cron without saving product rows in MongoDB.
               </Text>
               <InlineStack gap="200" wrap>
                 <Button variant="primary" url="/app/blocks-guide">
                   Open Blocks Guide
                 </Button>
                 <dailySyncFetcher.Form method="post">
-                  <input type="hidden" name="intent" value="run-daily-sync" />
-                  <Button
-                    submit
-                    loading={dailySyncFetcher.state !== "idle"}
-                  >
-                    Run daily sync
+                  <input type="hidden" name="intent" value="run-resync" />
+                  <Button submit loading={dailySyncFetcher.state !== "idle"}>
+                    Resync now
                   </Button>
                 </dailySyncFetcher.Form>
                 <last30SyncFetcher.Form method="post">
                   <input type="hidden" name="intent" value="run-last30-sync" />
-                  <Button
-                    submit
-                    loading={last30SyncFetcher.state !== "idle"}
-                  >
+                  <Button submit loading={last30SyncFetcher.state !== "idle"}>
                     Run last 30 days sync
                   </Button>
                 </last30SyncFetcher.Form>
-                {/* <Button url="/app/topselling">Open daily sync page</Button>
-                <Button url="/app/dailylast30daysproductsync">Open last 30 days page</Button> */}
               </InlineStack>
               {dailySyncFetcher.data?.message ? (
                 <Banner tone={dailySyncFetcher.data.ok ? "success" : "critical"}>
@@ -241,6 +209,7 @@ export default function Index() {
             availableDates={availableDates}
             tableProducts={tableProducts}
             defaultFilterDate={defaultFilterDate}
+            emptyStateMessage={emptyStateMessage}
           />
         </Layout.Section>
       </Layout>

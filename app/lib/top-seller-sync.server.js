@@ -1,8 +1,3 @@
-// app/lib/top-seller-sync.server.js
-import connectDataBase from "../lib/db.js";
-import { ProcessedDay } from "../lib/processeddayschema.js";
-import DailyProductSale from "../lib/dailyproductsaleschema.js";
-
 function extractGraphqlErrorMessage(errors) {
   if (!errors) {
     return null;
@@ -34,7 +29,7 @@ async function parseAdminGraphqlResponse(response, contextLabel) {
 
   try {
     responseJson = await response.json();
-  } catch (error) {
+  } catch {
     throw new Error(`${contextLabel}: invalid JSON response from Shopify`);
   }
 
@@ -44,6 +39,10 @@ async function parseAdminGraphqlResponse(response, contextLabel) {
   }
 
   return responseJson;
+}
+
+function formatDateString(date) {
+  return date.toISOString().split("T")[0];
 }
 
 function shouldSkipProduct({ title, price }) {
@@ -76,103 +75,12 @@ async function getShopGid(admin) {
   return shopResult.data.shop.id;
 }
 
-async function updateTopSellerMetafields({
-  admin,
-  shopGid,
-  previousDayProducts,
-  topProducts,
-  yesterdayDateStr,
-}) {
-  const metafields = [
-    {
-      ownerId: shopGid,
-      namespace: "top_seller",
-      key: "top_7days",
-      type: "json",
-      value: JSON.stringify({
-        updatedAt: new Date().toISOString(),
-        dateRangeEnd: yesterdayDateStr,
-        products: topProducts.map((product) => ({
-          productId: product._id,
-          title: product.title,
-          handle: product.handle,
-          imageUrl: product.imageUrl,
-          totalSold: product.totalSold,
-          price: product.price,
-        })),
-      }),
-    },
-    {
-      ownerId: shopGid,
-      namespace: "top_seller",
-      key: "previousday",
-      type: "json",
-      value: JSON.stringify({
-        updatedAt: new Date().toISOString(),
-        date: yesterdayDateStr,
-        products: previousDayProducts.map((product) => ({
-          productId: product.productId,
-          title: product.title,
-          handle: product.handle,
-          imageUrl: product.imageUrl,
-          soldQty: product.soldQty,
-          price: product.price,
-        })),
-      }),
-    },
-  ];
-
-  const metafieldMutation = `
-    mutation SetTopSellersMetafield($metafields: [MetafieldsSetInput!]!) {
-      metafieldsSet(metafields: $metafields) {
-        metafields {
-          id
-          key
-        }
-        userErrors {
-          field
-          message
-          code
-        }
-      }
-    }
-  `;
-
-  const metafieldResponse = await admin.graphql(metafieldMutation, {
-    variables: { metafields },
-  });
-
-  const metafieldResult = await parseAdminGraphqlResponse(
-    metafieldResponse,
-    "Metafield update failed",
-  );
-
-  if (metafieldResult?.data?.metafieldsSet?.userErrors?.length) {
-    throw new Error(
-      metafieldResult.data.metafieldsSet.userErrors
-        .map((error) => error.message)
-        .join(", ")
-    );
-  }
-}
-
-export async function runTopSellerSync({ admin, shop }) {
-  await connectDataBase();
-
-  const now = new Date();
-  const yesterday = new Date(now.getTime() - 86400000);
-  const yesterdayDateStr = yesterday.toISOString().split("T")[0];
-  const start = new Date(`${yesterdayDateStr}T00:00:00.000Z`);
-  const end = new Date(`${yesterdayDateStr}T23:59:59.999Z`);
-  const QUERY_STR = `created_at:>=${start.toISOString()} AND created_at:<=${end.toISOString()}`;
-
-  console.log("QUERY_STR", QUERY_STR);
-
+async function fetchOrdersForRange({ admin, queryString, contextLabel }) {
   let allOrders = [];
   let hasNextPage = true;
   let cursor = null;
 
-  const ORDERS_QUERY = `
+  const ordersQuery = `
     query getOrders($query: String!, $after: String) {
       orders(first: 250, query: $query, sortKey: CREATED_AT, after: $after) {
         edges {
@@ -214,159 +122,295 @@ export async function runTopSellerSync({ admin, shop }) {
   `;
 
   while (hasNextPage) {
-    const response = await admin.graphql(ORDERS_QUERY, {
-      variables: { query: QUERY_STR, after: cursor },
+    const response = await admin.graphql(ordersQuery, {
+      variables: { query: queryString, after: cursor },
     });
 
-    const result = await parseAdminGraphqlResponse(
-      response,
-      `Orders query failed for ${shop}`,
-    );
+    const result = await parseAdminGraphqlResponse(response, contextLabel);
+    const ordersData = result?.data?.orders;
 
-    if (!result?.data?.orders) {
-      throw new Error("Shopify orders query returned no data");
+    if (!ordersData) {
+      throw new Error(`${contextLabel}: Shopify orders query returned no data`);
     }
-
-    const ordersData = result.data.orders;
 
     allOrders = allOrders.concat(ordersData.edges);
     hasNextPage = ordersData.pageInfo.hasNextPage;
     cursor = ordersData.pageInfo.endCursor;
   }
 
-  let updatedProductsCount = 0;
+  return allOrders;
+}
+
+function aggregateProducts(orderEdges) {
+  const aggregatedProducts = new Map();
   let skippedLineItems = 0;
 
-  const alreadyProcessed = await ProcessedDay.findOne({
-    shop,
-    date: yesterdayDateStr,
-  });
+  for (const orderEdge of orderEdges) {
+    const lineItems = orderEdge.node.lineItems?.edges || [];
 
-  const shouldSkip =
-    alreadyProcessed &&
-    alreadyProcessed.recordsUpdated > 0 &&
-    alreadyProcessed.orderCount === allOrders.length;
+    for (const itemEdge of lineItems) {
+      const item = itemEdge.node;
+      const product = item.variant?.product;
+      const variantPrice = item.variant?.price;
+      const productTitle = item.title || product?.title || "Unknown Product";
 
-  if (!shouldSkip) {
-    const aggregatedProducts = new Map();
-
-    for (const orderEdge of allOrders) {
-      const lineItems = orderEdge.node.lineItems?.edges || [];
-
-      for (const itemEdge of lineItems) {
-        const item = itemEdge.node;
-        const product = item.variant?.product;
-        const variantPrice = item.variant?.price;
-        const productTitle = item.title || product?.title || "Unknown Product";
-
-        if (!product?.id) {
-          skippedLineItems++;
-          continue;
-        }
-
-        if (shouldSkipProduct({ title: productTitle, price: variantPrice })) {
-          skippedLineItems++;
-          continue;
-        }
-
-        const productId = product.id.split("/").pop();
-        const quantitySold = Number(item.quantity) || 0;
-        const existingProduct = aggregatedProducts.get(productId);
-
-        if (existingProduct) {
-          existingProduct.soldQty += quantitySold;
-          if (!existingProduct.imageUrl) {
-            existingProduct.imageUrl = product.images?.edges?.[0]?.node?.url || null;
-          }
-          continue;
-        }
-
-        aggregatedProducts.set(productId, {
-          shop,
-          date: yesterdayDateStr,
-          productId,
-          title: productTitle,
-          handle: product.handle || null,
-          imageUrl: product.images?.edges?.[0]?.node?.url || null,
-          soldQty: quantitySold,
-          price: Number(variantPrice) || 0,
-          firstSeenAt: new Date(),
-          lastUpdatedAt: new Date(),
-        });
+      if (!product?.id) {
+        skippedLineItems++;
+        continue;
       }
+
+      if (shouldSkipProduct({ title: productTitle, price: variantPrice })) {
+        skippedLineItems++;
+        continue;
+      }
+
+      const productId = product.id.split("/").pop();
+      const quantitySold = Number(item.quantity) || 0;
+      const existingProduct = aggregatedProducts.get(productId);
+
+      if (existingProduct) {
+        existingProduct.soldQty += quantitySold;
+        if (!existingProduct.imageUrl) {
+          existingProduct.imageUrl = product.images?.edges?.[0]?.node?.url || null;
+        }
+        continue;
+      }
+
+      aggregatedProducts.set(productId, {
+        productId,
+        title: productTitle,
+        handle: product.handle || null,
+        imageUrl: product.images?.edges?.[0]?.node?.url || null,
+        soldQty: quantitySold,
+        price: Number(variantPrice) || 0,
+      });
     }
-
-    await DailyProductSale.deleteMany({
-      shop,
-      date: yesterdayDateStr,
-    });
-
-    if (aggregatedProducts.size > 0) {
-      await DailyProductSale.insertMany([...aggregatedProducts.values()]);
-    }
-
-    updatedProductsCount = aggregatedProducts.size;
-
-    await ProcessedDay.findOneAndUpdate(
-      { shop, date: yesterdayDateStr },
-      {
-        processedAt: new Date(),
-        orderCount: allOrders.length,
-        recordsUpdated: updatedProductsCount,
-        skippedLineItems,
-      },
-      { upsert: true }
-    );
-
   }
 
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
+  const products = [...aggregatedProducts.values()].sort((firstProduct, secondProduct) => {
+    if (secondProduct.soldQty !== firstProduct.soldQty) {
+      return secondProduct.soldQty - firstProduct.soldQty;
+    }
 
-  const [topProducts, previousDayProducts, shopGid] = await Promise.all([
-    DailyProductSale.aggregate([
-      {
-        $match: {
-          shop,
-          date: { $gte: sevenDaysAgoStr },
-        },
-      },
-      {
-        $group: {
-          _id: "$productId",
-          totalSold: { $sum: "$soldQty" },
-          title: { $first: "$title" },
-          handle: { $first: "$handle" },
-          imageUrl: { $first: "$imageUrl" },
-          price: { $first: "$price" },
-        },
-      },
-      { $sort: { totalSold: -1 } },
-      { $limit: 10 },
-    ]),
-    DailyProductSale.find({ shop, date: yesterdayDateStr })
-      .sort({ soldQty: -1, lastUpdatedAt: -1, title: 1 })
-      .limit(10)
-      .lean(),
+    return String(firstProduct.title || "").localeCompare(String(secondProduct.title || ""));
+  });
+
+  return {
+    products,
+    skippedLineItems,
+  };
+}
+
+function buildSevenDayProducts(orderEdges) {
+  const { products } = aggregateProducts(orderEdges);
+
+  return products.slice(0, 10).map((product) => ({
+    productId: product.productId,
+    title: product.title,
+    handle: product.handle,
+    imageUrl: product.imageUrl,
+    totalSold: product.soldQty,
+    price: product.price,
+  }));
+}
+
+async function updateTopSellerMetafields({
+  admin,
+  shopGid,
+  previousDayProducts,
+  topProducts,
+  summary,
+}) {
+  const metafields = [
+    {
+      ownerId: shopGid,
+      namespace: "top_seller",
+      key: "top_7days",
+      type: "json",
+      value: JSON.stringify({
+        updatedAt: summary.syncedAt,
+        dateRangeStart: summary.sevenDayRangeStart,
+        dateRangeEnd: summary.date,
+        products: topProducts,
+      }),
+    },
+    {
+      ownerId: shopGid,
+      namespace: "top_seller",
+      key: "previousday",
+      type: "json",
+      value: JSON.stringify({
+        updatedAt: summary.syncedAt,
+        date: summary.date,
+        products: previousDayProducts,
+      }),
+    },
+    {
+      ownerId: shopGid,
+      namespace: "top_seller",
+      key: "sync_summary",
+      type: "json",
+      value: JSON.stringify(summary),
+    },
+  ];
+
+  const metafieldMutation = `
+    mutation SetTopSellersMetafield($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields {
+          id
+          key
+        }
+        userErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `;
+
+  const metafieldResponse = await admin.graphql(metafieldMutation, {
+    variables: { metafields },
+  });
+
+  const metafieldResult = await parseAdminGraphqlResponse(
+    metafieldResponse,
+    "Metafield update failed",
+  );
+
+  if (metafieldResult?.data?.metafieldsSet?.userErrors?.length) {
+    throw new Error(
+      metafieldResult.data.metafieldsSet.userErrors
+        .map((error) => error.message)
+        .join(", "),
+    );
+  }
+}
+
+function safeJsonParse(value) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+export async function getTopSellerMetafieldsSnapshot(admin) {
+  const query = `
+    query GetTopSellerSnapshot {
+      shop {
+        id
+        previousday: metafield(namespace: "top_seller", key: "previousday") {
+          id
+          value
+          updatedAt
+        }
+        top7days: metafield(namespace: "top_seller", key: "top_7days") {
+          id
+          value
+          updatedAt
+        }
+        syncSummary: metafield(namespace: "top_seller", key: "sync_summary") {
+          id
+          value
+          updatedAt
+        }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(query);
+  const result = await parseAdminGraphqlResponse(
+    response,
+    "Top seller metafield read failed",
+  );
+
+  const shop = result?.data?.shop;
+
+  return {
+    shopGid: shop?.id || null,
+    previousday: safeJsonParse(shop?.previousday?.value),
+    top7days: safeJsonParse(shop?.top7days?.value),
+    syncSummary: safeJsonParse(shop?.syncSummary?.value),
+    metafieldUpdatedAt: {
+      previousday: shop?.previousday?.updatedAt || null,
+      top7days: shop?.top7days?.updatedAt || null,
+      syncSummary: shop?.syncSummary?.updatedAt || null,
+    },
+  };
+}
+
+export async function runTopSellerSync({ admin, shop }) {
+  const now = new Date();
+  const last24HoursStart = new Date(now.getTime() - 86400000);
+  const sevenDayStart = new Date(now.getTime() - (7 * 86400000));
+  const syncDateStr = formatDateString(now);
+  const sevenDayStartStr = formatDateString(sevenDayStart);
+
+  const last24HoursQuery = `created_at:>=${last24HoursStart.toISOString()} AND created_at:<=${now.toISOString()}`;
+  const sevenDayQuery = `created_at:>=${sevenDayStart.toISOString()} AND created_at:<=${now.toISOString()}`;
+
+  const [shopGid, yesterdayOrders, sevenDayOrders] = await Promise.all([
     getShopGid(admin),
+    fetchOrdersForRange({
+      admin,
+      queryString: last24HoursQuery,
+      contextLabel: `Last 24 hours orders query failed for ${shop}`,
+    }),
+    fetchOrdersForRange({
+      admin,
+      queryString: sevenDayQuery,
+      contextLabel: `7-day orders query failed for ${shop}`,
+    }),
   ]);
+
+  const {
+    products: previousDayProductsAll,
+    skippedLineItems,
+  } = aggregateProducts(yesterdayOrders);
+  const previousDayProducts = previousDayProductsAll.slice(0, 10);
+  const topProducts = buildSevenDayProducts(sevenDayOrders);
+  const syncedAt = new Date().toISOString();
+
+  const summary = {
+    syncedAt,
+    date: syncDateStr,
+    last24HoursStart: last24HoursStart.toISOString(),
+    last24HoursEnd: now.toISOString(),
+    orderCount: yesterdayOrders.length,
+    productsUpdated: previousDayProductsAll.length,
+    skippedLineItems,
+    sevenDayRangeStart: sevenDayStartStr,
+    sevenDayRangeEnd: syncDateStr,
+    topProductName: previousDayProducts[0]?.title || null,
+    topProductSoldQty: previousDayProducts[0]?.soldQty || 0,
+    previousDayProducts,
+    sevenDayTopProducts: topProducts,
+  };
 
   await updateTopSellerMetafields({
     admin,
     shopGid,
     previousDayProducts,
     topProducts,
-    yesterdayDateStr,
+    summary,
   });
 
   return {
     ok: true,
     shop,
-    alreadyProcessed: Boolean(shouldSkip),
-    orderCount: allOrders.length,
-    updatedProductsCount,
+    alreadyProcessed: false,
+    orderCount: yesterdayOrders.length,
+    updatedProductsCount: previousDayProductsAll.length,
     skippedLineItems,
-    date: yesterdayDateStr,
+    date: syncDateStr,
+    syncedAt,
+    previousDayProducts,
+    topProducts,
   };
 }

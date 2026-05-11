@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useLoaderData, useNavigation, useSubmit } from "react-router";
+import { useLoaderData } from "react-router";
 import {
   Badge,
   Box,
@@ -7,90 +6,37 @@ import {
   IndexTable,
   Layout,
   Page,
-  Select,
   Text,
   useIndexResourceState,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server.js";
-import connectDataBase from "../lib/db.js";
-import DailyProductSale from "../lib/dailyproductsaleschema.js";
-import { ProcessedDay } from "../lib/processeddayschema.js";
-
-function isValidDateString(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
+import { getTopSellerMetafieldsSnapshot } from "../lib/top-seller-sync.server.js";
 
 export const loader = async ({ request }) => {
-  await connectDataBase();
-
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
-  const url = new URL(request.url);
-  const requestedDate = url.searchParams.get("date");
-
-  const latestProcessedDay = await ProcessedDay.findOne({ shop })
-    .sort({ processedAt: -1 })
-    .lean();
-
-  const dbDates = await DailyProductSale.distinct("date", { shop });
-  const processedDates = await ProcessedDay.distinct("date", { shop });
-  const availableDates = [...new Set([...dbDates, ...processedDates])].sort(
-    (firstDate, secondDate) => secondDate.localeCompare(firstDate),
-  );
-
-  const selectedDate =
-    isValidDateString(requestedDate) && requestedDate
-      ? requestedDate
-      : latestProcessedDay?.date || availableDates[0] || "";
-
-      console.log("selectedDate", selectedDate);
-
-  const savedProducts = selectedDate
-    ? await DailyProductSale.find({ shop, date: selectedDate })
-        .sort({ soldQty: -1, lastUpdatedAt: -1, title: 1 })
-        .lean()
-    : [];
+  const snapshot = await getTopSellerMetafieldsSnapshot(admin);
+  const selectedDate = snapshot.previousday?.date || snapshot.syncSummary?.date || "";
+  const savedProducts = snapshot.previousday?.products || [];
 
   return Response.json({
     shop,
-    availableDates,
+    availableDates: selectedDate ? [selectedDate] : [],
     selectedDate,
     savedProducts,
   });
-}; 
+};
 
 export default function ProductsRoute() {
-
   const data = useLoaderData();
-  const submit = useSubmit();
-  const navigation = useNavigation();
-  const [selectedDate, setSelectedDate] = useState(data.selectedDate || "");
-
-console.log("ProductsRoute data", selectedDate);
-
-
-  useEffect(() => {
-    setSelectedDate(data.selectedDate || "");
-  }, [data.selectedDate]); 
-
-
-  useEffect(() => {
-    if (!selectedDate || selectedDate === data.selectedDate) {
-      return;
-    }
-
-
-    submit({ date: selectedDate }, { method: "get" });
-  }, [data.selectedDate, selectedDate, submit]);
-
 
   const rows = data.savedProducts.map((product, index) => ({
-    id: product._id?.toString?.() ?? `${product.productId}-${index}`,
+    id: product.productId ?? `${index}`,
     productId: product.productId,
     title: product.title || "Unknown Product",
     handle: product.handle || "-",
     soldQty: product.soldQty || 0,
-    date: product.date,
+    date: data.selectedDate,
     imageUrl: product.imageUrl || "",
   }));
 
@@ -144,48 +90,19 @@ console.log("ProductsRoute data", selectedDate);
     ),
   );
 
-  const emptyStateMessage =
-    navigation.state !== "idle"
-      ? `Loading products for ${selectedDate}...`
-      : `No order data found for ${selectedDate}.`;
-
   return (
     <Page
       fullWidth
       title="Products"
-      subtitle="View saved top-selling products day by day"
+      subtitle="View top-selling products stored in Shopify metafields"
     >
       <Layout>
         <Layout.Section>
           <Card>
-            <Box
-              padding="400"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "16px",
-                flexWrap: "wrap",
-              }}
-            >
+            <Box padding="400">
               <Text as="h2" variant="headingMd">
-                Order Day Filter
+                Synced products for {data.selectedDate || "latest sync"}
               </Text>
-
-              <div style={{ minWidth: "220px" }}>
-                <Select
-                  label="Select date"
-                  labelInline
-                  options={data.availableDates.map((date) => ({
-                    label: date,
-                    value: date,
-                  }))}
-                  value={selectedDate}
-                  onChange={()=>{
-                    setSelectedDate(value);          
-                  }}
-                />
-              </div>
             </Box>
 
             <IndexTable
@@ -206,7 +123,7 @@ console.log("ProductsRoute data", selectedDate);
               emptyState={
                 <Box padding="400">
                   <Text as="p" alignment="center" tone="subdued">
-                    {emptyStateMessage}
+                    No synced product data found in metafields yet.
                   </Text>
                 </Box>
               }
